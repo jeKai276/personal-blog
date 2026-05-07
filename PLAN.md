@@ -729,10 +729,16 @@ Triết lý: consistent với brand, không fancy. Gray là primary, cyan chỉ 
 
 #### Verification Checklist
 
-- [ ] `next build` không TypeScript errors
+- [x] `next build` không TypeScript errors — Vercel build passed (deployed 2026-05-07)
 - [ ] Kiểm tra tất cả pages trên mobile 375px và desktop 1280px
 - [ ] WCAG AA contrast ratio (blue-400 trên white ≥ 4.5:1)
 - [ ] Lighthouse Performance — animations không dùng layout-triggering properties
+
+#### Deployed
+
+- Commit: `91f56fa` — `feat: Phase 6 UI/UX redesign — pastel blue theme`
+- Frontend: https://frontend-eta-self-61.vercel.app
+- Backend: https://personal-blog-eta-nine-42.vercel.app
 
 ---
 
