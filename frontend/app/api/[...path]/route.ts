@@ -8,6 +8,7 @@ async function proxy(req: NextRequest): Promise<NextResponse> {
 
   const reqHeaders = new Headers(req.headers)
   reqHeaders.delete('host')
+  reqHeaders.delete('expect') // undici does not support Expect: 100-continue
 
   const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
   const body = hasBody ? await req.arrayBuffer() : undefined
