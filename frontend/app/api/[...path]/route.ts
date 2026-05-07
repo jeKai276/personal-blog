@@ -32,8 +32,9 @@ async function proxy(req: NextRequest): Promise<NextResponse> {
         await new Promise(r => setTimeout(r, 2000))
         continue
       }
-      console.error('[proxy] target=%s error=%s', target, String(err))
-      return NextResponse.json({ error: 'Backend unavailable', detail: String(err) }, { status: 502 })
+      const cause = (err instanceof Error && err.cause) ? String(err.cause) : 'none'
+      console.error('[proxy] target=%s error=%s cause=%s', target, String(err), cause)
+      return NextResponse.json({ error: 'Backend unavailable', detail: String(err), cause }, { status: 502 })
     }
   }
 
