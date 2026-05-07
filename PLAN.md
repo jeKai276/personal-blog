@@ -302,55 +302,45 @@ Base path: `/api/v1`
 
 **Known limitation (chấp nhận):** `DeleteAlbum` không xóa S3 files của photos trong album — chỉ cascade xóa DB rows. Acceptable cho personal blog.
 
-### Phase 3 — Frontend Public Pages ✅ SCAFFOLDED (đang wire API)
+### Phase 3 — Frontend Public Pages ✅ DONE
 
 #### Hạ tầng — DONE
 - [x] Next.js setup, Tailwind, `package.json`, `next.config.ts`, `tailwind.config.ts`
 - [x] TypeScript interfaces (`types/index.ts`)
 - [x] API client + helpers (`lib/api.ts`, `lib/auth.ts`, `lib/utils.ts`)
-- [x] Layout: Navbar, Footer (`components/layout/`)
+- [x] Layout: Navbar (responsive hamburger), Footer (`components/layout/`)
 - [x] UI primitives: Button, Card, Badge (`components/ui/`)
-- [x] Components: BlogCard, BlogList, AlbumCard, PhotoGrid, SkillBadge, ProjectCard
-- [x] Hooks: `useAuth`, `usePosts`, `usePhotos`
-- [x] Route scaffolding: tất cả pages (public + admin) đã tạo file
+- [x] Components: BlogCard, BlogList, AlbumCard, PhotoGrid, SkillBadge, ProjectCard, AlbumGallery, Lightbox
+- [x] Route scaffolding + loading states tất cả pages
 
-#### Trang Public — CẦN WIRE API (placeholder content)
-- [x] Home (`app/(public)/page.tsx`) — static content done
-- [ ] About/Profile (`app/(public)/about/page.tsx`) — cần gọi `/skills`, `/projects`
-- [ ] Blog list (`app/(public)/blog/page.tsx`) — cần gọi `/posts`
-- [ ] Blog detail (`app/(public)/blog/[slug]/page.tsx`) — cần gọi `/posts/:slug` + render TipTap HTML
-- [ ] Photo album list (`app/(public)/photos/page.tsx`) — cần gọi `/albums`
-- [ ] Photo album detail (`app/(public)/photos/[albumId]/page.tsx`) — cần gọi `/albums/:id` + Lightbox
-- [ ] **Lightbox component** (`components/photo/Lightbox.tsx`) — chưa tạo
+#### Trang Public
+- [x] Home (`app/(public)/page.tsx`) — hero + recent posts section
+- [x] About/Profile (`app/(public)/about/page.tsx`) — gọi `/skills`, `/projects`
+- [x] Blog list (`app/(public)/blog/page.tsx`) — gọi `/posts`
+- [x] Blog detail (`app/(public)/blog/[slug]/page.tsx`) — gọi `/posts/:slug` + render TipTap HTML
+- [x] Photo album list (`app/(public)/photos/page.tsx`) — gọi `/albums`
+- [x] Photo album detail (`app/(public)/photos/[albumId]/page.tsx`) — gọi `/albums/:id` + Lightbox
+- [x] Lightbox component (`components/photo/Lightbox.tsx`) — keyboard nav (ESC, ←, →)
 
-### Phase 4 — Frontend Admin Panel (scaffolded, chờ implement)
+### Phase 4 — Frontend Admin Panel ✅ DONE
 
 #### Backend support — DONE
-- [x] Auth login validation (binding: required, min=8, max=72 — đã có từ Phase 1)
-- [x] Dashboard stats endpoint (`GET /admin/stats`) — trả về tổng posts/albums/photos/skills/projects
+- [x] Auth login validation (binding: required, min=8, max=72)
+- [x] Dashboard stats endpoint (`GET /admin/stats`)
 - [x] `internal/admin/` package: model, repository, service, handler
-- [x] Unit tests: admin service (3), auth handler (7), blog service (13), skill service (7), project service (9) — tổng 44 tests PASS
+- [x] Unit tests: tổng 44 tests PASS
 
-#### Đã xong (frontend)
-- [x] Auth guard (`app/admin/layout.tsx`) — redirect nếu chưa login
-- [x] `isAuthenticated()` trong `lib/auth.ts`
-
-#### Cần implement (hiện là placeholder)
-- [ ] Login form (`app/admin/login/page.tsx`) — cần form + gọi `POST /auth/login`
-- [ ] Dashboard (`app/admin/dashboard/page.tsx`) — stats đơn giản
-- [ ] Blog list admin (`app/admin/blog/page.tsx`) — cần gọi `GET /admin/posts`
-- [ ] **PostEditor với TipTap** (`components/blog/PostEditor.tsx`) — chưa tạo
-- [ ] Tạo bài mới (`app/admin/blog/new/page.tsx`) — cần PostEditor + `POST /admin/posts`
-- [ ] Sửa bài (`app/admin/blog/[id]/edit/page.tsx`) — cần PostEditor + `PUT /admin/posts/:id`
-- [ ] Album list admin (`app/admin/photos/page.tsx`) — cần gọi `GET /admin/albums`
-- [ ] Album detail + upload (`app/admin/photos/[albumId]/page.tsx`) — cần presigned URL flow
-
-#### Bước tiếp theo (thứ tự ưu tiên)
-1. **Login form** (`app/admin/login/page.tsx`) — form + `POST /api/v1/auth/login` qua proxy → unblock toàn bộ admin panel
-2. PostEditor (TipTap, cài `@tiptap/react @tiptap/starter-kit`)
-3. Admin blog list + new/edit
-4. Lightbox component
-5. Wire tất cả public pages với API
+#### Frontend — DONE
+- [x] Auth guard (`app/admin/(panel)/layout.tsx`) — redirect nếu chưa login
+- [x] Login form (`app/admin/login/page.tsx`) — form + `POST /auth/login`
+- [x] Dashboard (`app/admin/(panel)/dashboard/page.tsx`) — stats cards
+- [x] AdminNav với logout button
+- [x] Blog list admin — full CRUD: list, publish/unpublish, delete, link to edit
+- [x] PostEditor với TipTap (`components/blog/PostEditor.tsx`) — Bold, Italic, H1–H3, lists, code block, link
+- [x] Tạo bài mới (`app/admin/(panel)/blog/new/page.tsx`)
+- [x] Sửa bài (`app/admin/(panel)/blog/[id]/edit/page.tsx`)
+- [x] Album list admin — create form inline, delete
+- [x] Album detail + upload (`components/admin/AlbumUploadPage.tsx`) — drag-and-drop, presigned R2 URL flow, delete photos
 
 ### Phase 5a — Vercel Serverless Migration + Production Deploy ✅ DONE
 
@@ -396,13 +386,20 @@ Base path: `/api/v1`
 
 **Smoke test passed:** `POST /api/v1/auth/login` với `{username:"kai"}` → 200, `Set-Cookie: auth_token=<JWT>; HttpOnly; Secure; SameSite=Strict` ✓
 
-### Phase 5 — Polish & Deploy
-- [ ] Error handling đồng nhất
-- [ ] Loading states, skeleton UI
-- [ ] SEO: metadata, Open Graph
-- [ ] Responsive mobile
-- [ ] Deploy frontend (Vercel)
-- [ ] Deploy backend via Phase 5a serverless path
+### Phase 5 — Polish & Deploy ✅ DONE
+
+- [x] Error handling đồng nhất (tất cả pages có error boundary inline)
+- [x] Loading states — `loading.tsx` cho blog, blog detail, photos, album detail + spinner trong client components
+- [x] SEO: metadata + Open Graph cho tất cả public pages; `metadataBase` trong root layout
+- [x] Responsive mobile — Navbar hamburger menu (≤sm breakpoint)
+- [x] Deploy frontend (Vercel — `frontend-eta-self-61.vercel.app`)
+- [x] Deploy backend via Phase 5a serverless path (`personal-blog-eta-nine-42.vercel.app`)
+
+#### Bug fixes (2026-05-07)
+- [x] **CRITICAL**: Tất cả server component pages dùng `NEXT_PUBLIC_API_URL` (không được set trên Vercel) thay vì `BACKEND_URL` → đã fix sang `process.env.BACKEND_URL ?? 'http://localhost:8080'`
+- [x] Xóa `const BASE_URL` thừa trong `AlbumUploadPage.tsx` (unused variable)
+- [x] `BlogCard` đổi sang card layout (border-b không hợp với grid)
+- [x] Home page hiển thị recent posts (3 bài mới nhất)
 
 ---
 

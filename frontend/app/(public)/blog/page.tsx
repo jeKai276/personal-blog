@@ -2,10 +2,17 @@ import type { Metadata } from 'next'
 import BlogList from '@/components/blog/BlogList'
 import type { ApiResponse, PostsListData, Post } from '@/types'
 
-export const metadata: Metadata = { title: 'Blog' }
+export const metadata: Metadata = {
+  title: 'Blog',
+  description: 'Bài viết về code, backend, frontend và cuộc sống hàng ngày.',
+  openGraph: {
+    title: 'Blog',
+    description: 'Bài viết về code, backend, frontend và cuộc sống hàng ngày.',
+  },
+}
 export const dynamic = 'force-dynamic'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1'
+const BASE_URL = `${process.env.BACKEND_URL ?? 'http://localhost:8080'}/api/v1`
 
 export default async function BlogListPage() {
   let posts: Post[] = []

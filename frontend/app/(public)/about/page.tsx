@@ -3,10 +3,17 @@ import SkillBadge from '@/components/profile/SkillBadge'
 import ProjectCard from '@/components/profile/ProjectCard'
 import type { Skill, Project, ApiResponse } from '@/types'
 
-export const metadata: Metadata = { title: 'Về tôi' }
+export const metadata: Metadata = {
+  title: 'Về tôi',
+  description: 'Backend developer — skills, projects và hành trình học frontend.',
+  openGraph: {
+    title: 'Về tôi',
+    description: 'Backend developer — skills, projects và hành trình học frontend.',
+  },
+}
 export const dynamic = 'force-dynamic'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1'
+const BASE_URL = `${process.env.BACKEND_URL ?? 'http://localhost:8080'}/api/v1`
 
 async function fetchSkills(): Promise<Skill[]> {
   try {

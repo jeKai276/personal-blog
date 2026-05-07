@@ -5,7 +5,7 @@ import { formatDate } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1'
+const BASE_URL = `${process.env.BACKEND_URL ?? 'http://localhost:8080'}/api/v1`
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -17,7 +17,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const res = await fetch(`${BASE_URL}/posts/${slug}`, { cache: 'no-store' })
     if (!res.ok) return { title: 'Bài viết' }
     const json: ApiResponse<Post> = await res.json()
-    return { title: json.data?.title ?? 'Bài viết' }
+    const post = json.data
+    if (!post) return { title: 'Bài viết' }
+    return {
+      title: post.title,
+      description: post.excerpt || undefined,
+      openGraph: {
+        title: post.title,
+        description: post.excerpt || undefined,
+        type: 'article',
+        publishedTime: post.published_at ?? undefined,
+      },
+    }
   } catch {
     return { title: 'Bài viết' }
   }

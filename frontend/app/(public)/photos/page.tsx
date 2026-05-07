@@ -2,10 +2,17 @@ import type { Metadata } from 'next'
 import AlbumCard from '@/components/photo/AlbumCard'
 import type { ApiResponse, Album } from '@/types'
 
-export const metadata: Metadata = { title: 'Ảnh' }
+export const metadata: Metadata = {
+  title: 'Ảnh',
+  description: 'Ảnh đi chơi và cuộc sống hàng ngày.',
+  openGraph: {
+    title: 'Ảnh',
+    description: 'Ảnh đi chơi và cuộc sống hàng ngày.',
+  },
+}
 export const dynamic = 'force-dynamic'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1'
+const BASE_URL = `${process.env.BACKEND_URL ?? 'http://localhost:8080'}/api/v1`
 
 export default async function PhotosPage() {
   let albums: Album[] = []

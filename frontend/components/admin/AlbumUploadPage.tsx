@@ -5,8 +5,6 @@ import Image from 'next/image'
 import { api } from '@/lib/api'
 import type { Album, Photo, ApiResponse } from '@/types'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1'
-
 interface Props {
   albumId: number
 }
