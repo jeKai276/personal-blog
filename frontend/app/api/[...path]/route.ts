@@ -13,9 +13,7 @@ async function proxy(req: NextRequest): Promise<NextResponse> {
   const upstream = await fetch(target, {
     method: req.method,
     headers: reqHeaders,
-    body: hasBody ? req.body : undefined,
-    // @ts-expect-error -- required for streaming request bodies in Node.js fetch
-    duplex: 'half',
+    body: hasBody ? await req.arrayBuffer() : undefined,
   })
 
   return new NextResponse(upstream.body, {
