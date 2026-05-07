@@ -15,9 +15,9 @@ export default function Navbar() {
   const [open, setOpen] = useState(false)
 
   return (
-    <nav className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur">
+    <nav className="sticky top-0 z-50 border-b border-blue-100 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-        <Link href="/" className="text-lg font-bold" onClick={() => setOpen(false)}>
+        <Link href="/" className="text-xl font-bold text-blue-800" onClick={() => setOpen(false)}>
           yendp
         </Link>
 
@@ -27,7 +27,7 @@ export default function Navbar() {
             <li key={link.href}>
               <Link
                 href={link.href}
-                className={`text-sm ${pathname === link.href ? 'font-medium text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`text-sm transition-colors ${pathname === link.href ? 'font-medium text-blue-500' : 'text-gray-500 hover:text-blue-500'}`}
               >
                 {link.label}
               </Link>
@@ -37,7 +37,7 @@ export default function Navbar() {
 
         {/* Mobile hamburger */}
         <button
-          className="rounded p-1 sm:hidden"
+          className="rounded-lg p-1.5 text-gray-500 hover:text-blue-500 sm:hidden"
           onClick={() => setOpen(v => !v)}
           aria-label={open ? 'Đóng menu' : 'Mở menu'}
         >
@@ -53,14 +53,14 @@ export default function Navbar() {
 
       {/* Mobile dropdown */}
       {open && (
-        <div className="border-t sm:hidden">
+        <div className="border-t border-blue-100 bg-white/95 sm:hidden">
           <ul className="flex flex-col px-4 py-2">
             {navLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className={`block py-2 text-sm ${pathname === link.href ? 'font-medium text-gray-900' : 'text-gray-500'}`}
+                  className={`block py-2.5 text-sm transition-colors ${pathname === link.href ? 'font-medium text-blue-500' : 'text-gray-500'}`}
                 >
                   {link.label}
                 </Link>

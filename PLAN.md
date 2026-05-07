@@ -1,4 +1,4 @@
-# Personal Blog — Project Plan
+﻿# Personal Blog — Project Plan
 
 ## Mô tả
 
@@ -400,6 +400,380 @@ Base path: `/api/v1`
 - [x] Xóa `const BASE_URL` thừa trong `AlbumUploadPage.tsx` (unused variable)
 - [x] `BlogCard` đổi sang card layout (border-b không hợp với grid)
 - [x] Home page hiển thị recent posts (3 bài mới nhất)
+
+---
+
+## Phase 6 — UI/UX Redesign
+
+### Tổng quan
+
+Hiện tại toàn bộ site dùng color scheme xám (`gray-900`, `gray-500`, `gray-100`), không có brand color, layout flat và thiếu visual hierarchy. Phase 6 redesign toàn bộ public-facing UI sang pastel blue/white minimal theme, nâng cao reading experience cho blog, và đảm bảo admin panel consistent với brand mà không over-engineer.
+
+Không thay đổi backend, không thay đổi data fetching logic — chỉ redesign presentation layer.
+
+---
+
+### Design Tokens / Theme
+
+#### Color Palette (Tailwind classes)
+
+| Token | Tailwind class | Hex | Dùng cho |
+|---|---|---|---|
+| Brand Primary | `blue-400` | `#60A5FA` | CTA buttons, active nav link, accent |
+| Brand Dark | `blue-500` | `#3B82F6` | Button hover state |
+| Brand Deeper | `blue-800` | `#1E40AF` | Hero dark text, logo |
+| Brand Light | `blue-50` | `#EFF6FF` | Section backgrounds, card hover |
+| Brand Muted | `blue-100` | `#DBEAFE` | Badge backgrounds, tag pills |
+| Brand Text | `blue-600` | `#2563EB` | Link color in content |
+| Neutral Dark | `gray-900` | `#111827` | Body text |
+| Neutral Mid | `gray-500` | `#6B7280` | Secondary text, metadata |
+| Neutral Light | `gray-200` | `#E5E7EB` | Borders, dividers |
+| Surface | `white` | `#FFFFFF` | Card backgrounds |
+| Surface Alt | `gray-50` | `#F9FAFB` | Page background sections |
+
+#### Typography
+
+| Role | Tailwind class | Ghi chú |
+|---|---|---|
+| Display / Hero H1 | `text-5xl font-bold tracking-tight` (desktop), `text-3xl` (mobile) | |
+| Page title H1 | `text-4xl font-bold` (desktop), `text-2xl` (mobile) | |
+| Section heading H2 | `text-2xl font-semibold` | |
+| Subsection H3 | `text-base font-semibold uppercase tracking-widest text-gray-500` | category labels |
+| Body | `text-base leading-relaxed text-gray-700` | |
+| Small / metadata | `text-sm text-gray-500` | date, tag |
+| Micro | `text-xs text-gray-400` | counter, captions |
+| Code inline | `font-mono text-sm bg-blue-50 text-blue-800` | |
+
+Font: system-ui stack mặc định của Tailwind. Optional: `Inter` cho body + `JetBrains Mono` cho code (self-host qua `next/font`).
+
+#### Spacing
+
+- Max content width: `max-w-3xl` cho reading content (blog detail, about bio)
+- Max page width: `max-w-5xl` cho grids (blog list, photos)
+- Section gap: `py-16` desktop, `py-10` mobile
+- Card padding: `p-5` hoặc `p-6`
+
+#### Border Radius
+
+- Cards: `rounded-2xl`
+- Buttons: `rounded-lg`
+- Tags/Badges: `rounded-full`
+- Images: `rounded-xl`
+
+---
+
+### Shared Components — Làm trước (block nhiều trang)
+
+#### 1. `components/ui/Button.tsx` — Redesign
+
+Thêm variant `brand` (`bg-blue-400 text-white hover:bg-blue-500`) và `outline-brand` (`border border-blue-400 text-blue-500 hover:bg-blue-50`). Variant `primary` (gray-900) giữ nguyên cho admin.
+
+#### 2. `components/ui/Badge.tsx` — Redesign
+
+Thêm variant `brand`: `bg-blue-100 text-blue-600`. Giữ variant `default` (gray) cho admin.
+
+#### 3. `components/layout/Navbar.tsx` — Redesign
+
+- Logo: `text-blue-800 font-bold text-xl`
+- Active link: `text-blue-500 font-medium`; hover: `hover:text-blue-400`
+- Border bottom: `border-blue-100`
+- Mobile dropdown: `bg-white/95` backdrop
+
+#### 4. `components/layout/Footer.tsx` — Redesign
+
+- Background: `bg-gray-900 text-gray-400`; brand text: `text-blue-300`
+- Thêm social links (GitHub, LinkedIn) + quick nav links
+
+#### 5. `components/ui/SectionHeading.tsx` — Tạo mới
+
+Props: `label?: string`, `title: string`, `href?: string`, `hrefLabel?: string`. Dùng lại ở Home + About.
+
+---
+
+### 1. Home Page
+
+**File:** `frontend/app/(public)/page.tsx`
+
+#### Layout
+
+```
+[Navbar]
+[Hero Section — ~80vh, 2-col desktop]
+[Recent Posts Section]
+[Skills Preview Section — 4-6 skills hardcoded]
+[Photo Teaser Section — 4 album cards]
+[Footer]
+```
+
+#### Hero Section
+
+- Background: `bg-gradient-to-br from-white via-blue-50 to-white`
+- Eyebrow: `text-sm font-medium text-blue-500 uppercase tracking-widest`
+- H1: `text-5xl font-bold text-gray-900 leading-tight`
+- Subtitle: `text-lg text-gray-600 leading-relaxed max-w-lg`
+- CTAs: Button `brand` ("Về tôi") + Button `outline-brand` ("Đọc blog")
+- Avatar: `next/image` `rounded-2xl` ~280px desktop. Placeholder: div với initials "YD" trên `bg-gradient-to-br from-blue-300 to-blue-500`
+- Layout: desktop `grid grid-cols-2 gap-12 items-center`, mobile `flex flex-col-reverse gap-8`
+
+#### Skills Preview
+
+- Không fetch API — hardcode 4-5 skills (Go, PostgreSQL, Docker, React)
+- Mỗi item: `bg-blue-50 border border-blue-100 rounded-xl px-4 py-2 text-sm font-medium text-blue-700`
+- Link "Xem tất cả skills →" dẫn `/about`
+
+#### Photo Teaser
+
+- Grid: `grid grid-cols-2 gap-4 sm:grid-cols-4`
+- Section background: `bg-gray-50 rounded-3xl p-6`
+- Dùng `AlbumCard` đã redesign
+
+#### Animations
+
+- Hero text: `@keyframes fadeInUp` (translateY 16px → 0, 0.5s ease-out, fill-mode both) — stagger 3 elements
+- Card hover: `hover:shadow-md hover:-translate-y-0.5 transition-all duration-200`
+- Không dùng scroll-triggered animations
+
+#### Mobile Responsive
+
+- Hero ảnh: `hidden sm:block` trên mobile nhỏ nhất
+- 2-col hero bắt đầu từ `md` breakpoint
+- Touch target minimum 44px cho tất cả buttons
+
+#### Components cần tạo
+
+- `components/home/HeroSection.tsx` (extract từ page)
+- `components/home/SkillsPreview.tsx`
+
+---
+
+### 2. About/Profile Page
+
+**File:** `frontend/app/(public)/about/page.tsx`
+
+#### Layout
+
+```
+[ProfileHero — tên + tagline]
+[Bio Section — paragraph]
+[Skills Section — grouped by category]
+[Projects Section — grid]
+[SocialLinks Section]
+```
+
+#### Skills — Redesign `SkillBadge`
+
+Grouped by category. Mỗi skill chip:
+- Container: `inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 px-3 py-2 text-sm hover:border-blue-200 hover:bg-blue-50`
+- Level: 5 chấm tròn `w-1.5 h-1.5 rounded-full` — filled `bg-blue-400`, empty `bg-gray-200`
+
+Grid: `grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4`
+
+#### Projects — Redesign `ProjectCard`
+
+- Featured: `border-2 border-blue-200 bg-gradient-to-br from-white to-blue-50`
+- Normal: `border border-gray-200 bg-white`
+- Tech tags: `Badge` variant `brand`
+- Links: `text-blue-500 hover:text-blue-600`
+- Grid: `grid gap-5 sm:grid-cols-2`
+
+#### Bio
+
+- Lead: `text-lg font-medium text-gray-800`; Body: `text-base leading-[1.75] text-gray-600`
+- Hardcode bio paragraph vào page (không cần API)
+
+#### Components cần tạo
+
+- `components/profile/ProfileHero.tsx`
+- `components/profile/SocialLinks.tsx` — SVG inline icons, hardcode URLs
+
+---
+
+### 3. Blog List + Blog Detail
+
+#### Blog List — `frontend/app/(public)/blog/page.tsx`
+
+- Tag filter: URL searchParams (`?tag=go`) — server-side, SEO-friendly, không cần `'use client'`
+- Tạo `components/blog/TagFilter.tsx`: active tag `bg-blue-400 text-white`, inactive `bg-gray-100 hover:bg-blue-50 hover:text-blue-600`
+- Empty state: SVG icon bút + message có style
+
+#### BlogCard Redesign
+
+- Container: `group rounded-2xl border border-gray-200 bg-white p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200`
+- Cover image (nếu có): `aspect-video rounded-xl object-cover`
+- Title: `group-hover:text-blue-600 transition-colors`
+- Footer: date `text-xs text-gray-400` + arrow `text-blue-400`
+
+#### Blog Detail — `frontend/app/(public)/blog/[slug]/page.tsx`
+
+- Cover image: `aspect-[21/9]` desktop, `aspect-video` mobile, `rounded-2xl`
+- Article container: `max-w-2xl mx-auto`
+- Reading time: estimate từ content length (`Math.ceil(words / 200)` phút)
+- `globals.css` blog-content updates:
+  - `a`: `text-blue-600 hover:text-blue-800`
+  - `blockquote`: `border-blue-200 text-gray-600`
+  - `code` inline: `bg-blue-50 text-blue-800`
+  - `p`: `line-height: 1.8`
+- Prev/Next navigation: `components/blog/PostNavigation.tsx` — TODO: cần fetch logic (fetch all posts, find index)
+
+---
+
+### 4. Photo Gallery + Album Detail
+
+#### Album List — `frontend/app/(public)/photos/page.tsx`
+
+**Quyết định:** Uniform grid (không masonry — tránh JS layout engine).
+
+**AlbumCard Redesign:**
+- Ảnh: `aspect-[4/3] rounded-2xl overflow-hidden`
+- Hover overlay: `bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`
+- Count badge: `absolute top-2 right-2 bg-black/50 text-white text-xs rounded-full px-2 py-0.5`
+- Location: icon pin + `text-sm text-gray-500`
+- Grid: `grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3`
+
+#### Album Detail — `frontend/app/(public)/photos/[albumId]/page.tsx`
+
+- Cover banner: `aspect-[3/1] object-cover rounded-2xl`; placeholder: `bg-gradient-to-r from-blue-100 to-blue-50`
+- Meta row: location, date, photo count — `flex gap-4 text-sm text-gray-500`
+
+**PhotoGrid:** Gap `gap-1` thay vì `gap-2`, grid `grid-cols-2 sm:grid-cols-3 md:grid-cols-4`
+
+**Lightbox Improvements:**
+- Background: `bg-black/95`
+- Caption box: fixed bottom, `bg-gradient-to-t from-black/80 to-transparent`
+- Counter: top-center
+- Nav buttons: `bg-black/30 hover:bg-black/60 rounded-full backdrop-blur-sm`
+- Touch swipe: `onTouchStart`/`onTouchEnd`, deltaX > 50px trigger prev/next
+
+---
+
+### 5. Admin Panel
+
+Triết lý: consistent với brand, không fancy. Gray là primary, cyan chỉ làm accent.
+
+#### Login Page
+
+- Page background: `bg-gray-950` (dark login tạo contrast)
+- Card: `bg-white rounded-2xl shadow-2xl p-8 max-w-sm`
+- Input focus: `focus:ring-blue-400`
+- Submit: Button variant `brand`
+
+#### AdminNav
+
+- Logo: "yendp / admin" — slash separator, logo part `text-blue-500`
+- Active link: `text-blue-500 font-medium`
+- Logout: `text-gray-400 hover:text-red-500`
+
+#### Dashboard
+
+- Stats icons: SVG cho Document, Image, Grid, Code, Briefcase
+- Active stat: `text-blue-500`
+- Card hover: `hover:border-blue-200 hover:shadow-sm`
+
+#### Admin CRUD Pages
+
+- Row hover: `hover:bg-blue-50`
+- Thay ad-hoc button classes bằng `Button` component
+
+---
+
+### Thứ tự Implement
+
+#### Sprint 1 — Design System Foundation
+
+- [x] Extend `tailwind.config.ts`: `brand: colors.cyan` alias
+- [x] Redesign `components/ui/Button.tsx`: thêm `brand` + `outline-brand`
+- [x] Redesign `components/ui/Badge.tsx`: thêm `brand`
+- [x] Tạo `components/ui/SectionHeading.tsx`
+- [x] Redesign `components/layout/Navbar.tsx`
+- [x] Redesign `components/layout/Footer.tsx`
+- [x] Thêm `@keyframes fadeInUp` + utility class vào `globals.css`
+
+#### Sprint 2 — Home Page
+
+- [x] Tạo `components/home/HeroSection.tsx`
+- [x] Tạo `components/home/SkillsPreview.tsx`
+- [x] Redesign `components/blog/BlogCard.tsx`
+- [x] Redesign `app/(public)/page.tsx`
+
+#### Sprint 3 — Blog List + Detail
+
+- [x] Tạo `components/blog/TagFilter.tsx`
+- [x] Redesign `components/blog/BlogList.tsx` (empty state)
+- [x] Redesign `app/(public)/blog/page.tsx`
+- [x] Redesign `app/(public)/blog/[slug]/page.tsx`
+- [x] Update `globals.css` blog-content styles
+- [x] Tạo `components/blog/PostNavigation.tsx` (skipped — backend không có prev/next endpoint) (TODO: fetch logic)
+
+#### Sprint 4 — About/Profile Page
+
+- [x] Tạo `components/profile/ProfileHero.tsx`
+- [x] Redesign `components/profile/SkillBadge.tsx`
+- [x] Redesign `components/profile/ProjectCard.tsx`
+- [x] Tạo `components/profile/SocialLinks.tsx`
+- [x] Redesign `app/(public)/about/page.tsx`
+
+#### Sprint 5 — Photo Gallery
+
+- [x] Redesign `components/photo/AlbumCard.tsx`
+- [x] Redesign `components/photo/PhotoGrid.tsx`
+- [x] Redesign `components/photo/Lightbox.tsx`
+- [x] Redesign `app/(public)/photos/page.tsx`
+- [x] Redesign `app/(public)/photos/[albumId]/page.tsx`
+
+#### Sprint 6 — Admin Polish
+
+- [x] Redesign `components/admin/LoginForm.tsx`
+- [x] Redesign `components/admin/AdminNav.tsx`
+- [x] Polish `app/admin/(panel)/dashboard/page.tsx`
+- [x] Audit admin pages: thay ad-hoc button classes bằng `Button` component
+
+#### Verification Checklist
+
+- [ ] `next build` không TypeScript errors
+- [ ] Kiểm tra tất cả pages trên mobile 375px và desktop 1280px
+- [ ] WCAG AA contrast ratio (blue-400 trên white ≥ 4.5:1)
+- [ ] Lighthouse Performance — animations không dùng layout-triggering properties
+
+---
+
+### Files cần tạo mới
+
+| File | Lý do |
+|---|---|
+| `frontend/components/ui/SectionHeading.tsx` | Shared section header |
+| `frontend/components/home/HeroSection.tsx` | Extract hero, isolate animation logic |
+| `frontend/components/home/SkillsPreview.tsx` | Hardcoded skills teaser |
+| `frontend/components/blog/TagFilter.tsx` | URL-based tag filter |
+| `frontend/components/blog/PostNavigation.tsx` | Prev/next navigation |
+| `frontend/components/profile/ProfileHero.tsx` | Header section About page |
+| `frontend/components/profile/SocialLinks.tsx` | GitHub/LinkedIn/Email links |
+
+### Files cần redesign (không tạo mới)
+
+| File | Thay đổi chính |
+|---|---|
+| `frontend/tailwind.config.ts` | Extend theme với brand alias |
+| `frontend/app/globals.css` | fadeInUp keyframe, blog-content cyan styles |
+| `frontend/components/ui/Button.tsx` | Thêm `brand` + `outline-brand` variants |
+| `frontend/components/ui/Badge.tsx` | Thêm `brand` variant |
+| `frontend/components/layout/Navbar.tsx` | Cyan active states |
+| `frontend/components/layout/Footer.tsx` | Dark bg, social links |
+| `frontend/components/blog/BlogCard.tsx` | Cover image, cyan hover |
+| `frontend/components/blog/BlogList.tsx` | Empty state redesign |
+| `frontend/components/photo/AlbumCard.tsx` | `aspect-[4/3]`, overlay, count badge |
+| `frontend/components/photo/PhotoGrid.tsx` | Tighter gaps |
+| `frontend/components/photo/Lightbox.tsx` | Swipe, counter reposition, nav buttons |
+| `frontend/components/profile/SkillBadge.tsx` | Dot level indicator |
+| `frontend/components/profile/ProjectCard.tsx` | Featured distinction, cover image |
+| `frontend/components/admin/LoginForm.tsx` | Dark bg page, cyan focus |
+| `frontend/components/admin/AdminNav.tsx` | Cyan active, logout color |
+| `frontend/app/(public)/page.tsx` | Full hero redesign |
+| `frontend/app/(public)/about/page.tsx` | Bio section, layout polish |
+| `frontend/app/(public)/blog/page.tsx` | Tag filter integration |
+| `frontend/app/(public)/blog/[slug]/page.tsx` | Cover image, reading time |
+| `frontend/app/(public)/photos/page.tsx` | Grid layout update |
+| `frontend/app/(public)/photos/[albumId]/page.tsx` | Cover banner, meta row |
+| `frontend/app/admin/(panel)/dashboard/page.tsx` | Stats icons |
 
 ---
 

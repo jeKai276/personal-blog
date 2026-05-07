@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import SkillBadge from '@/components/profile/SkillBadge'
 import ProjectCard from '@/components/profile/ProjectCard'
+import ProfileHero from '@/components/profile/ProfileHero'
+import SocialLinks from '@/components/profile/SocialLinks'
+import SectionHeading from '@/components/ui/SectionHeading'
 import type { Skill, Project, ApiResponse } from '@/types'
 
 export const metadata: Metadata = {
@@ -47,39 +50,54 @@ export default async function AboutPage() {
   }, {})
 
   return (
-    <div className="space-y-10">
-      <h1 className="text-3xl font-bold">Về tôi</h1>
+    <div className="space-y-12">
+      <ProfileHero />
 
-      <section>
-        <h2 className="mb-4 text-xl font-semibold">Skills</h2>
-        {skills.length === 0 ? (
-          <p className="text-sm text-gray-400">Chưa có skills.</p>
-        ) : (
+      {/* Bio */}
+      <section className="max-w-2xl space-y-4">
+        <p className="text-lg font-medium leading-relaxed text-gray-800">
+          Tôi là Yen — backend developer với niềm đam mê xây dựng hệ thống scalable và reliable.
+        </p>
+        <p className="leading-[1.8] text-gray-600">
+          Tôi làm việc chủ yếu với Go và PostgreSQL, thích thiết kế API rõ ràng và viết code dễ bảo trì.
+          Hiện tại đang học frontend với React và Next.js để có thể build full-stack từ đầu đến cuối.
+          Website này là nơi tôi chia sẻ những gì học được, những chuyến đi, và cuộc sống hàng ngày.
+        </p>
+        <SocialLinks />
+      </section>
+
+      {/* Skills */}
+      {skills.length > 0 && (
+        <section>
+          <SectionHeading label="Kỹ năng" title="Skills" />
           <div className="space-y-6">
             {Object.entries(skillsByCategory).map(([category, catSkills]) => (
               <div key={category}>
-                <h3 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-500 capitalize">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-blue-500 capitalize">
                   {category}
                 </h3>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {catSkills.map(skill => <SkillBadge key={skill.id} skill={skill} />)}
+                  {catSkills.map((skill) => (
+                    <SkillBadge key={skill.id} skill={skill} />
+                  ))}
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      <section>
-        <h2 className="mb-4 text-xl font-semibold">Projects</h2>
-        {projects.length === 0 ? (
-          <p className="text-sm text-gray-400">Chưa có projects.</p>
-        ) : (
+      {/* Projects */}
+      {projects.length > 0 && (
+        <section>
+          <SectionHeading label="Dự án" title="Projects" />
           <div className="grid gap-4 sm:grid-cols-2">
-            {projects.map(project => <ProjectCard key={project.id} project={project} />)}
+            {projects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   )
 }

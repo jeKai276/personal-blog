@@ -29,16 +29,28 @@ export default async function PhotosPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold">Ảnh</h1>
+      <div className="space-y-1">
+        <p className="text-xs font-semibold uppercase tracking-widest text-blue-500">Khoảnh khắc</p>
+        <h1 className="text-4xl font-bold text-gray-900">Ảnh</h1>
+        <p className="text-gray-500">Những chuyến đi và cuộc sống hàng ngày.</p>
+      </div>
+
       {error ? (
-        <div className="rounded-md bg-red-50 p-4 text-sm text-red-600">
+        <div className="rounded-xl bg-red-50 p-4 text-sm text-red-600">
           Không thể tải albums: {error}
         </div>
       ) : albums.length === 0 ? (
-        <p className="py-16 text-center text-sm text-gray-400">Chưa có album nào.</p>
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-gray-200 py-20 text-center">
+          <svg className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <p className="text-sm font-medium text-gray-500">Chưa có album nào</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {albums.map(album => <AlbumCard key={album.id} album={album} />)}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {albums.map((album) => (
+            <AlbumCard key={album.id} album={album} />
+          ))}
         </div>
       )}
     </div>

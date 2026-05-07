@@ -25,17 +25,21 @@ export default function AdminNav() {
     <header className="border-b bg-white px-6 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <span className="font-semibold text-gray-900">Admin</span>
+          <span className="text-sm font-semibold">
+            <span className="text-blue-500">yendp</span>
+            <span className="mx-1 text-gray-300">/</span>
+            <span className="text-gray-500">admin</span>
+          </span>
           <nav className="flex gap-4 text-sm">
-            {navLinks.map(link => (
+            {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={
+                className={`transition-colors ${
                   pathname.startsWith(link.href)
-                    ? 'font-medium text-gray-900'
-                    : 'text-gray-500 hover:text-gray-900'
-                }
+                    ? 'font-medium text-blue-500'
+                    : 'text-gray-500 hover:text-blue-500'
+                }`}
               >
                 {link.label}
               </Link>
@@ -44,7 +48,7 @@ export default function AdminNav() {
         </div>
         <button
           onClick={handleLogout}
-          className="text-sm text-gray-500 hover:text-gray-900"
+          className="text-sm text-gray-400 transition-colors hover:text-red-500"
         >
           Đăng xuất
         </button>

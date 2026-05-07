@@ -4,19 +4,24 @@ interface SkillBadgeProps {
   skill: Skill
 }
 
-const levelLabel: Record<Skill['level'], string> = {
-  1: 'Beginner',
-  2: 'Basic',
-  3: 'Intermediate',
-  4: 'Advanced',
-  5: 'Expert',
+function LevelDots({ level }: { level: 1 | 2 | 3 | 4 | 5 }) {
+  return (
+    <div className="flex gap-1">
+      {([1, 2, 3, 4, 5] as const).map((i) => (
+        <div
+          key={i}
+          className={`h-1.5 w-1.5 rounded-full ${i <= level ? 'bg-blue-400' : 'bg-gray-200'}`}
+        />
+      ))}
+    </div>
+  )
 }
 
 export default function SkillBadge({ skill }: SkillBadgeProps) {
   return (
-    <div className="flex items-center justify-between rounded-lg border p-3">
-      <span className="font-medium">{skill.name}</span>
-      <span className="text-sm text-gray-400">{levelLabel[skill.level]}</span>
+    <div className="inline-flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2.5 transition-colors hover:border-blue-200 hover:bg-blue-50">
+      <span className="text-sm font-medium text-gray-800">{skill.name}</span>
+      <LevelDots level={skill.level} />
     </div>
   )
 }
