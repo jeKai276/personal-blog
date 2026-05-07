@@ -355,9 +355,13 @@ Base path: `/api/v1`
 ### Phase 5a — Vercel Serverless Migration ✅ DONE
 
 #### Architecture
-- **22 serverless functions** in `api/v1/...` — one directory + `index.go` per route group (not file-per-dir, to keep valid Go packages)
-- **`internal/bootstrap/bootstrap.go`** — `sync.Once` shared init: DB connect, migrations, admin seed, R2 storage, all services
-- **Gin inside each function** — creates `gin.New()` per request, registers its own route(s), calls `router.ServeHTTP(w, r)`
+- **Single catch-all function** `api/index.go` at project root — Vercel routes all `/api/*` there
+- **`internal/bootstrap/bootstrap.go`** — `sync.Once` shared init: DB connect, migrations, admin seed, R2 storage, all services; exposes `Router *gin.Engine`
+- **Root `go.mod`** (`module personal-blog-api`) with `replace github.com/yendp/personal-blog => ./backend` — lets Vercel compile `api/index.go` against the backend module
+- **Deployment**: 2 separate Vercel projects, same repo
+  - **Backend project**: Root Directory = `/` (project root), env vars from Vercel dashboard
+  - **Frontend project**: Root Directory = `frontend/`, Vercel auto-detects Next.js
+- **Cookie / CORS**: Frontend Next.js rewrites proxy all `/api/*` to the backend, so `SameSite=Strict` JWT cookies are set and sent on the frontend domain — no cross-site cookie issue
 
 #### Completed
 - [x] Convert Gin routes → Vercel `/api/v1` functions (22 handlers, full path preserved)
@@ -369,10 +373,16 @@ Base path: `/api/v1`
 - [x] All 44 existing tests pass (`go test ./internal/... ./pkg/...`)
 
 #### Pending (deploy-time)
-- [ ] Create Vercel Postgres database, copy `DATABASE_URL` into Vercel env vars
-- [ ] Create Cloudflare R2 bucket, set `R2_*` env vars in Vercel
-- [ ] Set `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `COOKIE_SECURE=true`, `ALLOWED_ORIGINS` in Vercel env vars
-- [ ] Deploy backend Vercel project (root = `backend/`)
+
+**Backend Vercel project** (Root Directory = `/`):
+- [ ] Create Vercel Postgres database, copy `POSTGRES_URL` into Vercel env vars
+- [ ] Create Cloudflare R2 bucket, set `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BASE_URL`
+- [ ] Set `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `COOKIE_SECURE=true`, `ALLOWED_ORIGINS`
+
+**Frontend Vercel project** (Root Directory = `frontend/`):
+- [ ] Set `BACKEND_URL` = backend project URL (e.g. `https://myblog-api.vercel.app`)
+- [ ] Vercel auto-detects Next.js — no extra build config needed
+- [ ] If using custom R2 domain for images, add hostname to `next.config.ts` `remotePatterns`
 
 ### Phase 5 — Polish & Deploy
 - [ ] Error handling đồng nhất

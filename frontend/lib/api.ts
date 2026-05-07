@@ -1,4 +1,9 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1'
+// Server components call backend directly (no extra hop); browser uses relative
+// URL so the Next.js rewrite proxy handles it — cookie stays on one domain.
+const BASE_URL =
+  typeof window === 'undefined'
+    ? `${process.env.BACKEND_URL ?? 'http://localhost:8080'}/api/v1`
+    : '/api/v1'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
