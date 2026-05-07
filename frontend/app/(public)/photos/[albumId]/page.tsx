@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import PhotoGrid from '@/components/photo/PhotoGrid'
+import AlbumGallery from '@/components/photo/AlbumGallery'
 import type { ApiResponse, Album } from '@/types'
 import { formatDate } from '@/lib/utils'
 
@@ -64,7 +64,7 @@ export default async function AlbumDetailPage({ params }: Props) {
           <p className="text-sm text-gray-400">{formatDate(album.taken_at)}</p>
         )}
       </header>
-      <PhotoGrid photos={photos} />
+      <AlbumGallery photos={photos} />
     </div>
   )
 }

@@ -135,6 +135,7 @@ func main() {
 
 			// Blog admin.
 			adminGroup.GET("/posts", blogHandler.ListAll)
+			adminGroup.GET("/posts/:id", blogHandler.GetByID)
 			adminGroup.POST("/posts", blogHandler.Create)
 			adminGroup.PUT("/posts/:id", blogHandler.Update)
 			adminGroup.DELETE("/posts/:id", blogHandler.Delete)

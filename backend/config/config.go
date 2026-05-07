@@ -24,6 +24,15 @@ type Config struct {
 	AWSAccessKeyID     string
 	AWSSecretAccessKey string
 	AWSS3BaseURL       string
+	// DatabaseURL is a full Postgres connection string (e.g. from Vercel Postgres).
+	// When set it takes precedence over the individual DB_* fields.
+	DatabaseURL       string
+	// R2 (Cloudflare) storage fields.
+	R2AccountID       string
+	R2Bucket          string
+	R2AccessKeyID     string
+	R2SecretAccessKey string
+	R2BaseURL         string
 }
 
 // Load reads configuration from environment variables.
@@ -70,5 +79,16 @@ func Load() *Config {
 		AWSAccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
 		AWSSecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		AWSS3BaseURL:       os.Getenv("AWS_S3_BASE_URL"),
+		DatabaseURL: func() string {
+			if v := os.Getenv("POSTGRES_URL"); v != "" {
+				return v
+			}
+			return os.Getenv("DATABASE_URL")
+		}(),
+		R2AccountID:        os.Getenv("R2_ACCOUNT_ID"),
+		R2Bucket:           os.Getenv("R2_BUCKET"),
+		R2AccessKeyID:      os.Getenv("R2_ACCESS_KEY_ID"),
+		R2SecretAccessKey:  os.Getenv("R2_SECRET_ACCESS_KEY"),
+		R2BaseURL:          os.Getenv("R2_BASE_URL"),
 	}
 }

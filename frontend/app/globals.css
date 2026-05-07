@@ -16,3 +16,13 @@
 .blog-content a { @apply text-blue-600 hover:underline; }
 .blog-content img { @apply rounded-lg my-4 max-w-full; }
 .blog-content hr { @apply border-gray-200 my-8; }
+
+/* TipTap editor (edit mode) */
+.ProseMirror { @apply outline-none; }
+.ProseMirror p.is-empty::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

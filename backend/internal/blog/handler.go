@@ -57,6 +57,25 @@ func (h *Handler) GetBySlug(c *gin.Context) {
 	response.OK(c, post)
 }
 
+// GetByID handles GET /admin/posts/:id — admin fetch single post by ID.
+func (h *Handler) GetByID(c *gin.Context) {
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
+	post, err := h.svc.GetByID(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			response.Error(c, http.StatusNotFound, "post not found")
+			return
+		}
+		log.Printf("blog.GetByID: %v", err)
+		response.Error(c, http.StatusInternalServerError, "failed to fetch post")
+		return
+	}
+	response.OK(c, post)
+}
+
 // ListAll handles GET /admin/posts — admin list of all posts (including drafts).
 func (h *Handler) ListAll(c *gin.Context) {
 	page := queryInt(c, "page", 1)

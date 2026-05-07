@@ -62,6 +62,43 @@ func New(region, bucket, accessKey, secretKey, baseURL string) (Storage, error) 
 	}, nil
 }
 
+// NewR2 creates a Storage backed by Cloudflare R2 (S3-compatible).
+func NewR2(accountID, bucket, accessKey, secretKey, baseURL string) (Storage, error) {
+	if accountID == "" || bucket == "" || accessKey == "" || secretKey == "" {
+		return nil, fmt.Errorf("R2 credentials incomplete")
+	}
+
+	endpoint := fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID)
+
+	cfg, err := awsconfig.LoadDefaultConfig(
+		context.Background(),
+		awsconfig.WithRegion("auto"),
+		awsconfig.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(accessKey, secretKey, ""),
+		),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("load R2 config: %w", err)
+	}
+
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(endpoint)
+		o.UsePathStyle = true
+	})
+	presign := s3.NewPresignClient(client)
+
+	if baseURL == "" {
+		baseURL = fmt.Sprintf("https://%s.r2.dev", bucket)
+	}
+
+	return &s3Storage{
+		client:  client,
+		presign: presign,
+		bucket:  bucket,
+		baseURL: baseURL,
+	}, nil
+}
+
 // PresignedPutURL returns a presigned URL valid for the given expiry duration.
 func (s *s3Storage) PresignedPutURL(ctx context.Context, key, contentType string, expiry time.Duration) (string, error) {
 	req, err := s.presign.PresignPutObject(ctx, &s3.PutObjectInput{

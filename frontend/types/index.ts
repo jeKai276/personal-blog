@@ -73,3 +73,12 @@ export interface PostsListData {
   page: number
   limit: number
 }
+
+// Shape of GET /admin/stats response data
+export interface AdminStats {
+  posts: number
+  albums: number
+  photos: number
+  skills: number
+  projects: number
+}

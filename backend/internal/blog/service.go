@@ -11,6 +11,7 @@ import (
 // Service handles business logic for blog posts.
 type Service interface {
 	Create(ctx context.Context, req CreatePostRequest) (*Post, error)
+	GetByID(ctx context.Context, id int) (*Post, error)
 	GetBySlug(ctx context.Context, s string) (*Post, error)
 	ListPublished(ctx context.Context, tag string, page, limit int) ([]*Post, int, error)
 	ListAll(ctx context.Context, page, limit int) ([]*Post, int, error)
@@ -56,6 +57,10 @@ func (s *service) Create(ctx context.Context, req CreatePostRequest) (*Post, err
 		return nil, fmt.Errorf("create post: %w", err)
 	}
 	return created, nil
+}
+
+func (s *service) GetByID(ctx context.Context, id int) (*Post, error) {
+	return s.repo.FindByID(ctx, id)
 }
 
 func (s *service) GetBySlug(ctx context.Context, sl string) (*Post, error) {

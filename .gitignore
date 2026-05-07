@@ -36,3 +36,6 @@ frontend/.next/
 
 # Log files
 *.log
+
+.vercel
+.env*.local

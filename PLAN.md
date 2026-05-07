@@ -351,14 +351,35 @@ Base path: `/api/v1`
 4. Lightbox component
 5. Wire tất cả public pages với API
 
+### Phase 5a — Vercel Serverless Migration ✅ DONE
+
+#### Architecture
+- **22 serverless functions** in `api/v1/...` — one directory + `index.go` per route group (not file-per-dir, to keep valid Go packages)
+- **`internal/bootstrap/bootstrap.go`** — `sync.Once` shared init: DB connect, migrations, admin seed, R2 storage, all services
+- **Gin inside each function** — creates `gin.New()` per request, registers its own route(s), calls `router.ServeHTTP(w, r)`
+
+#### Completed
+- [x] Convert Gin routes → Vercel `/api/v1` functions (22 handlers, full path preserved)
+- [x] Replace AWS S3 → Cloudflare R2 (`pkg/storage.NewR2` with custom endpoint + `UsePathStyle=true`)
+- [x] `DATABASE_URL` support in `internal/database.Connect` (Vercel Postgres; falls back to individual `DB_*` vars)
+- [x] Config: `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BASE_URL`, `DATABASE_URL`
+- [x] `vercel.json` config (`maxDuration: 30` for all Go functions)
+- [x] Migration auto-run on cold start (same `embed.FS` approach, called from `bootstrap.Setup`)
+- [x] All 44 existing tests pass (`go test ./internal/... ./pkg/...`)
+
+#### Pending (deploy-time)
+- [ ] Create Vercel Postgres database, copy `DATABASE_URL` into Vercel env vars
+- [ ] Create Cloudflare R2 bucket, set `R2_*` env vars in Vercel
+- [ ] Set `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `COOKIE_SECURE=true`, `ALLOWED_ORIGINS` in Vercel env vars
+- [ ] Deploy backend Vercel project (root = `backend/`)
+
 ### Phase 5 — Polish & Deploy
 - [ ] Error handling đồng nhất
 - [ ] Loading states, skeleton UI
 - [ ] SEO: metadata, Open Graph
 - [ ] Responsive mobile
-- [ ] Dockerfile cho backend
-- [ ] Deploy backend (Railway / Fly.io / VPS)
 - [ ] Deploy frontend (Vercel)
+- [ ] Deploy backend via Phase 5a serverless path
 
 ---
 

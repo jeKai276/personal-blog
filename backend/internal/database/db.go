@@ -9,11 +9,16 @@ import (
 )
 
 // Connect opens a PostgreSQL connection and verifies it with a ping.
+// It prefers DATABASE_URL when set (e.g. Vercel Postgres), falling back to
+// individual DB_* fields for local development.
 func Connect(cfg *config.Config) (*sql.DB, error) {
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode,
-	)
+	dsn := cfg.DatabaseURL
+	if dsn == "" {
+		dsn = fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+			cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode,
+		)
+	}
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {

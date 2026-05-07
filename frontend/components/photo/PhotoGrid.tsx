@@ -5,9 +5,10 @@ interface PhotoGridProps {
   photos: Photo[]
   isLoading?: boolean
   error?: string | null
+  onPhotoClick?: (index: number) => void
 }
 
-export default function PhotoGrid({ photos, isLoading = false, error = null }: PhotoGridProps) {
+export default function PhotoGrid({ photos, isLoading = false, error = null, onPhotoClick }: PhotoGridProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -32,8 +33,12 @@ export default function PhotoGrid({ photos, isLoading = false, error = null }: P
 
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-      {photos.map((photo) => (
-        <div key={photo.id} className="group relative overflow-hidden rounded-md bg-gray-100">
+      {photos.map((photo, index) => (
+        <div
+          key={photo.id}
+          className={`group relative overflow-hidden rounded-md bg-gray-100 ${onPhotoClick ? 'cursor-pointer' : ''}`}
+          onClick={() => onPhotoClick?.(index)}
+        >
           <div className="aspect-square relative">
             <Image
               src={photo.thumbnail_url || photo.url}
