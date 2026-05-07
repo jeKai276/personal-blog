@@ -1,7 +1,5 @@
 import type { NextConfig } from 'next'
 
-const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080'
-
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -9,14 +7,6 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**.r2.cloudflarestorage.com' },
       { protocol: 'https', hostname: '**.r2.dev' },
     ],
-  },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${backendUrl}/api/:path*`,
-      },
-    ]
   },
 }
 
