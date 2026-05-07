@@ -346,13 +346,13 @@ Base path: `/api/v1`
 - [ ] Album detail + upload (`app/admin/photos/[albumId]/page.tsx`) — cần presigned URL flow
 
 #### Bước tiếp theo (thứ tự ưu tiên)
-1. Login form (unblock admin)
+1. **Login form** (`app/admin/login/page.tsx`) — form + `POST /api/v1/auth/login` qua proxy → unblock toàn bộ admin panel
 2. PostEditor (TipTap, cài `@tiptap/react @tiptap/starter-kit`)
 3. Admin blog list + new/edit
 4. Lightbox component
 5. Wire tất cả public pages với API
 
-### Phase 5a — Vercel Serverless Migration ✅ DONE
+### Phase 5a — Vercel Serverless Migration + Production Deploy ✅ DONE
 
 #### Architecture
 - **Single catch-all function** `api/index.go` at project root — Vercel routes all `/api/*` there
@@ -361,7 +361,8 @@ Base path: `/api/v1`
 - **Deployment**: 2 separate Vercel projects, same repo
   - **Backend project**: Root Directory = `/` (project root), env vars from Vercel dashboard
   - **Frontend project**: Root Directory = `frontend/`, Vercel auto-detects Next.js
-- **Cookie / CORS**: Frontend Next.js rewrites proxy all `/api/*` to the backend, so `SameSite=Strict` JWT cookies are set and sent on the frontend domain — no cross-site cookie issue
+- **Cookie / CORS**: Frontend dùng catch-all Route Handler (`frontend/app/api/[...path]/route.ts`) proxy tất cả `/api/*` sang backend ở runtime — không dùng `next.config.ts` rewrites (build-time, không đọc được `BACKEND_URL` lúc runtime). `SameSite=Strict` JWT cookie được set trên frontend domain, không bị cross-site.
+- **Proxy details**: Xóa `host` + `expect` headers trước khi forward. Đọc body qua `req.arrayBuffer()`. Retry 1 lần (2s delay) để handle backend cold start (Go init + Neon DB wake-up = 10–15s). Timeout 28s/attempt qua `AbortSignal.timeout(28000)`.
 
 #### Completed
 - [x] Convert Gin routes → Vercel `/api/v1` functions (22 handlers, full path preserved)
@@ -372,17 +373,28 @@ Base path: `/api/v1`
 - [x] Migration auto-run on cold start (same `embed.FS` approach, called from `bootstrap.Setup`)
 - [x] All 44 existing tests pass (`go test ./internal/... ./pkg/...`)
 
-#### Pending (deploy-time)
+#### Deploy — ✅ DONE (2026-05-07)
 
-**Backend Vercel project** (Root Directory = `/`):
-- [ ] Create Vercel Postgres database, copy `POSTGRES_URL` into Vercel env vars
-- [ ] Create Cloudflare R2 bucket, set `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BASE_URL`
-- [ ] Set `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `COOKIE_SECURE=true`, `ALLOWED_ORIGINS`
+**Backend Vercel project** (`personal-blog-eta-nine-42.vercel.app`):
+- [x] Neon PostgreSQL `DATABASE_URL` set trên Production
+- [x] Cloudflare R2: `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BASE_URL` set Production
+- [x] `JWT_SECRET`, `ADMIN_USERNAME` (`kai`), `ADMIN_PASSWORD`, `COOKIE_SECURE=true`, `ALLOWED_ORIGINS` set Production
 
-**Frontend Vercel project** (Root Directory = `frontend/`):
-- [ ] Set `BACKEND_URL` = backend project URL (e.g. `https://myblog-api.vercel.app`)
-- [ ] Vercel auto-detects Next.js — no extra build config needed
-- [ ] If using custom R2 domain for images, add hostname to `next.config.ts` `remotePatterns`
+**Frontend Vercel project** (`frontend-eta-self-61.vercel.app`):
+- [x] `BACKEND_URL=https://personal-blog-eta-nine-42.vercel.app` set Production
+- [x] Catch-all Route Handler proxy (`app/api/[...path]/route.ts`) — runtime, không build-time
+- [x] `next.config.ts` rewrites đã **xóa** (build-time issue: `BACKEND_URL` không available lúc build)
+
+#### Production issues fixed (2026-05-07)
+
+| # | Lỗi | Root cause | Fix |
+|---|---|---|---|
+| 1 | `DNS_HOSTNAME_RESOLVED_PRIVATE` | `rewrites()` trong `next.config.ts` chạy lúc build — `BACKEND_URL` chưa được set → fallback `localhost` → Vercel edge từ chối private IP | Xóa rewrites, thay bằng catch-all Route Handler proxy |
+| 2 | `FUNCTION_INVOCATION_FAILED` trên backend | 9 env vars (`JWT_SECRET`, `ADMIN_*`, `ALLOWED_ORIGINS`, `COOKIE_SECURE`, `R2_*`) chỉ set cho Development, không có Production | Set tất cả cho Production scope |
+| 3 | Proxy 502 `NotSupportedError: expect header not supported` | Client gửi `Expect: 100-continue` cho POST; Node.js undici không hỗ trợ header này | `reqHeaders.delete('expect')` trong proxy |
+| 4 | Proxy 502 cold start timeout | Go function + Neon DB auto-suspend = 10–15s; undici timeout mặc định < thời gian wake-up | Retry 1 lần (2s delay) + `AbortSignal.timeout(28000)` |
+
+**Smoke test passed:** `POST /api/v1/auth/login` với `{username:"kai"}` → 200, `Set-Cookie: auth_token=<JWT>; HttpOnly; Secure; SameSite=Strict` ✓
 
 ### Phase 5 — Polish & Deploy
 - [ ] Error handling đồng nhất
