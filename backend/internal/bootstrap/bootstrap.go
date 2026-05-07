@@ -149,6 +149,7 @@ func setupRouter() *gin.Engine {
 			adminGroup.PATCH("/photos/:id", photoHandler.UpdatePhoto)
 
 			adminGroup.POST("/upload/presigned-url", photoHandler.PresignedURL)
+			adminGroup.POST("/upload/presigned-r2-url", photoHandler.PresignedURL)
 
 			adminGroup.POST("/skills", skillHandler.Create)
 			adminGroup.PUT("/skills/:id", skillHandler.Update)

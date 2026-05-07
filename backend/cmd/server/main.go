@@ -34,8 +34,8 @@ func main() {
 	if cfg.AdminUsername == "" || cfg.AdminPassword == "" {
 		log.Fatal("ADMIN_USERNAME and ADMIN_PASSWORD environment variables are required")
 	}
-	if cfg.AWSS3Bucket == "" || cfg.AWSS3Region == "" || cfg.AWSAccessKeyID == "" || cfg.AWSSecretAccessKey == "" {
-		log.Println("warning: AWS S3 not fully configured — photo upload endpoints will fail at runtime")
+	if cfg.R2AccountID == "" || cfg.R2Bucket == "" {
+		log.Println("warning: R2 not configured — photo upload endpoints will fail at runtime")
 	}
 
 	// 3. Connect to database.
@@ -61,16 +61,29 @@ func main() {
 	}
 	log.Println("admin account ready")
 
-	// 6. Initialize S3 storage.
-	store, err := storage.New(
-		cfg.AWSS3Region,
-		cfg.AWSS3Bucket,
-		cfg.AWSAccessKeyID,
-		cfg.AWSSecretAccessKey,
-		cfg.AWSS3BaseURL,
-	)
-	if err != nil {
-		log.Fatalf("init storage: %v", err)
+	// 6. Initialize storage: prefer R2, fall back to S3.
+	var store storage.Storage
+	var storageErr error
+	if cfg.R2AccountID != "" && cfg.R2Bucket != "" {
+		store, storageErr = storage.NewR2(
+			cfg.R2AccountID, cfg.R2Bucket,
+			cfg.R2AccessKeyID, cfg.R2SecretAccessKey,
+			cfg.R2BaseURL,
+		)
+		if storageErr != nil {
+			log.Fatalf("init R2 storage: %v", storageErr)
+		}
+		log.Println("using Cloudflare R2 storage")
+	} else {
+		store, storageErr = storage.New(
+			cfg.AWSS3Region, cfg.AWSS3Bucket,
+			cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey,
+			cfg.AWSS3BaseURL,
+		)
+		if storageErr != nil {
+			log.Fatalf("init S3 storage: %v", storageErr)
+		}
+		log.Println("using AWS S3 storage")
 	}
 
 	// 7. Wire repos + services.
@@ -153,6 +166,7 @@ func main() {
 
 			// Upload.
 			adminGroup.POST("/upload/presigned-url", photoHandler.PresignedURL)
+			adminGroup.POST("/upload/presigned-r2-url", photoHandler.PresignedURL)
 
 			// Skill admin.
 			adminGroup.POST("/skills", skillHandler.Create)

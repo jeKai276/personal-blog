@@ -15,7 +15,7 @@ Single admin user — không có hệ thống đăng ký.
 | Frontend | Next.js (App Router), TypeScript, Tailwind CSS |
 | Backend | Go (Golang), Gin, standard project layout |
 | Database | PostgreSQL |
-| Storage | AWS S3 |
+| Storage | Cloudflare R2 (S3-compatible) |
 | Auth | JWT trong httpOnly cookie |
 
 ---
@@ -239,7 +239,8 @@ Base path: `/api/v1`
 | POST | `/admin/albums/:id/photos` | Lưu metadata ảnh sau khi upload S3 | Có |
 | DELETE | `/admin/photos/:id` | Xóa ảnh | Có |
 | PATCH | `/admin/photos/:id` | Cập nhật caption, sort_order | Có |
-| POST | `/admin/upload/presigned-url` | Lấy S3 presigned URL để upload thẳng từ browser | Có |
+| POST | `/admin/upload/presigned-url` | Lấy presigned URL (legacy, giữ lại) | Có |
+| POST | `/admin/upload/presigned-r2-url` | Lấy R2 presigned URL để upload thẳng từ browser | Có |
 
 ### Profile
 

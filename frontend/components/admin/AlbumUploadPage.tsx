@@ -60,20 +60,20 @@ export default function AlbumUploadPage({ albumId }: Props) {
       setUploads(prev => prev.map((u, j) => j === i ? { ...u, status: 'uploading' } : u))
 
       try {
-        // 1. Get presigned URL
+        // 1. Get R2 presigned URL
         const presignRes = await api.post<ApiResponse<{ upload_url: string; key: string }>>(
-          '/admin/upload/presigned-url',
+          '/admin/upload/presigned-r2-url',
           { filename: file.name, content_type: file.type }
         )
         const { upload_url, key } = presignRes.data
 
-        // 2. Upload to S3
+        // 2. Upload directly to R2 via presigned URL
         const uploadRes = await fetch(upload_url, {
           method: 'PUT',
           body: file,
           headers: { 'Content-Type': file.type },
         })
-        if (!uploadRes.ok) throw new Error(`S3 upload failed: ${uploadRes.status}`)
+        if (!uploadRes.ok) throw new Error(`R2 upload failed: ${uploadRes.status}`)
 
         // 3. Get dimensions
         const { width, height } = await getImageDimensions(file).catch(() => ({ width: 0, height: 0 }))
