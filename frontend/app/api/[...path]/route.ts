@@ -24,14 +24,21 @@ async function proxy(req: NextRequest): Promise<NextResponse> {
         signal: AbortSignal.timeout(28000),
       })
 
-      const payload = await upstream.arrayBuffer()
-      const headers = new Headers(upstream.headers)
-      headers.delete('content-encoding')
-      headers.delete('content-length')
-      headers.delete('transfer-encoding')
-      headers.delete('connection')
+      // Read as text to avoid binary/encoding ambiguity
+      const text = await upstream.text()
+      const headers = new Headers()
+      headers.set('content-type', upstream.headers.get('content-type') || 'application/json; charset=utf-8')
 
-      return new NextResponse(payload, {
+      // Copy safe headers only
+      const safeToCopy = ['access-control-allow-origin', 'access-control-allow-credentials',
+                          'access-control-allow-methods', 'access-control-allow-headers',
+                          'access-control-max-age', 'set-cookie']
+      safeToCopy.forEach(h => {
+        const val = upstream.headers.get(h)
+        if (val) headers.set(h, val)
+      })
+
+      return new NextResponse(text, {
         status: upstream.status,
         statusText: upstream.statusText,
         headers,
