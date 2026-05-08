@@ -731,14 +731,42 @@ Triết lý: consistent với brand, không fancy. Gray là primary, cyan chỉ 
 
 - [x] `next build` không TypeScript errors — Vercel build passed (deployed 2026-05-07)
 - [ ] Kiểm tra tất cả pages trên mobile 375px và desktop 1280px
-- [x] WCAG AA contrast ratio (blue-400 trên white ≥ 4.5:1)
-- [x] Lighthouse Performance — animations không dùng layout-triggering properties
+- [x] WCAG AA contrast ratio — đã fix `text-blue-400` → `text-blue-600` cho readable text (commit `cd7a8e0`)
+- [x] Lighthouse Performance — đã fix `transition-all` → `transition-[transform,box-shadow]` (commit `cd7a8e0`)
 
 #### Deployed
 
 - Commit: `91f56fa` — `feat: Phase 6 UI/UX redesign — pastel blue theme`
 - Frontend: https://frontend-eta-self-61.vercel.app
 - Backend: https://personal-blog-eta-nine-42.vercel.app
+
+---
+
+## Trạng thái hiện tại (2026-05-08)
+
+### Vercel Frontend Build — CẦN FIX (chưa làm)
+
+**Lỗi:**
+```
+Error: > Couldn't find any 'pages' or 'app' directory. Please create one under the project root
+Error: Command "npm run vercel-build" exited with 1
+```
+
+**Root cause:** Vercel frontend project (`frontend-eta-self-61.vercel.app`) kết nối đến repo `jeKai276/personal-blog` nhưng **Root Directory chưa được set thành `frontend`** — Vercel đang build từ repo root, không tìm thấy `app/`.
+
+**Fix cần làm (Vercel Dashboard UI):**
+1. Vào Vercel Dashboard → project `frontend-eta-self-61`
+2. Settings → General → Root Directory
+3. Set thành `frontend`
+4. Save → Redeploy
+
+**Không cần thay đổi code nào.**
+
+### package-lock.json — Đã xóa nhầm
+
+- Commit `4171847` đã xóa `frontend/package-lock.json` (diagnosis sai về SWC binary)
+- Sau khi fix Root Directory xong, chạy `npm install` trong `frontend/` để regenerate và commit lại
+- Priority thấp — Vercel vẫn chạy được không có lockfile
 
 ---
 
