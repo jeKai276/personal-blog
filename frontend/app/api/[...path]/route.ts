@@ -9,6 +9,7 @@ async function proxy(req: NextRequest): Promise<NextResponse> {
   const reqHeaders = new Headers(req.headers)
   reqHeaders.delete('host')
   reqHeaders.delete('expect') // undici does not support Expect: 100-continue
+  reqHeaders.delete('accept-encoding')
 
   const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
   const body = hasBody ? await req.arrayBuffer() : undefined
@@ -23,10 +24,17 @@ async function proxy(req: NextRequest): Promise<NextResponse> {
         signal: AbortSignal.timeout(28000),
       })
 
-      return new NextResponse(upstream.body, {
+      const payload = await upstream.arrayBuffer()
+      const headers = new Headers(upstream.headers)
+      headers.delete('content-encoding')
+      headers.delete('content-length')
+      headers.delete('transfer-encoding')
+      headers.delete('connection')
+
+      return new NextResponse(payload, {
         status: upstream.status,
         statusText: upstream.statusText,
-        headers: upstream.headers,
+        headers,
       })
     } catch (err) {
       if (attempt < 1) {
