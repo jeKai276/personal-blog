@@ -731,8 +731,8 @@ Triết lý: consistent với brand, không fancy. Gray là primary, cyan chỉ 
 
 - [x] `next build` không TypeScript errors — Vercel build passed (deployed 2026-05-07)
 - [ ] Kiểm tra tất cả pages trên mobile 375px và desktop 1280px
-- [ ] WCAG AA contrast ratio (blue-400 trên white ≥ 4.5:1)
-- [ ] Lighthouse Performance — animations không dùng layout-triggering properties
+- [x] WCAG AA contrast ratio (blue-400 trên white ≥ 4.5:1)
+- [x] Lighthouse Performance — animations không dùng layout-triggering properties
 
 #### Deployed
 

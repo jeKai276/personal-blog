@@ -9,7 +9,7 @@ interface BlogCardProps {
 
 export default function BlogCard({ post }: BlogCardProps) {
   return (
-    <article className="group flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <article className="group flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-md">
       {post.tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {post.tags.map((tag) => (
@@ -25,7 +25,7 @@ export default function BlogCard({ post }: BlogCardProps) {
       )}
       <div className="mt-auto flex items-center justify-between pt-1">
         <span className="text-xs text-gray-400">{formatDate(post.created_at)}</span>
-        <span className="text-xs font-medium text-blue-400">Đọc thêm →</span>
+        <span className="text-xs font-medium text-blue-600">Đọc thêm →</span>
       </div>
     </article>
   )

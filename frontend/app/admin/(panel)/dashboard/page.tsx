@@ -78,7 +78,7 @@ export default async function DashboardPage() {
           <Link
             key={card.label}
             href={card.href}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-white p-5 text-center transition-all hover:border-blue-200 hover:shadow-sm"
+            className="flex flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-white p-5 text-center transition-[border-color,box-shadow] hover:border-blue-200 hover:shadow-sm"
           >
             <span className="text-gray-400">{icons[card.label]}</span>
             <div className={`text-3xl font-bold ${card.value > 0 ? 'text-blue-500' : 'text-gray-900'}`}>
