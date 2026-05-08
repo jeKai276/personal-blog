@@ -121,10 +121,16 @@ func (r *repository) List(ctx context.Context, params ListPostsParams) ([]*Post,
 	}
 	offset := (params.Page - 1) * params.Limit
 
+	// Public published posts: sort by published_at so recently published
+	// drafts don't get buried when finally published.
+	orderBy := "created_at DESC"
+	if params.Status == "published" {
+		orderBy = "published_at DESC"
+	}
 	listQ := `SELECT id, title, slug, content, excerpt, cover_image_url, status, tags,
 	                 published_at, created_at, updated_at
 	          FROM posts` + where +
-		fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+		fmt.Sprintf(" ORDER BY %s LIMIT $%d OFFSET $%d", orderBy, argIdx, argIdx+1)
 	args = append(args, params.Limit, offset)
 
 	rows, err := r.db.QueryContext(ctx, listQ, args...)

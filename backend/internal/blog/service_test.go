@@ -163,6 +163,18 @@ func TestCreate_GeneratesUniqueSlugOnCollision(t *testing.T) {
 	}
 }
 
+func TestCreate_WhitespaceTitleReturnsError(t *testing.T) {
+	svc := NewService(newFakeBlogRepo())
+
+	_, err := svc.Create(context.Background(), CreatePostRequest{
+		Title:   "   ",
+		Content: "Content",
+	})
+	if err == nil {
+		t.Fatal("expected error for whitespace-only title, got nil")
+	}
+}
+
 func TestListPublished_PassesCorrectStatus(t *testing.T) {
 	repo := newFakeBlogRepo()
 	svc := NewService(repo)

@@ -32,6 +32,9 @@ func NewService(repo Repository) Service {
 
 func (s *service) Create(ctx context.Context, req CreatePostRequest) (*Post, error) {
 	base := slug.Make(req.Title)
+	if base == "" {
+		return nil, fmt.Errorf("title produces empty slug — use meaningful text")
+	}
 	uniqueSlug, err := s.uniqueSlug(ctx, base)
 	if err != nil {
 		return nil, fmt.Errorf("generate slug: %w", err)
