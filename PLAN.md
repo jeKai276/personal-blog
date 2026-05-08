@@ -702,7 +702,7 @@ Triết lý: consistent với brand, không fancy. Gray là primary, cyan chỉ 
 - [x] Redesign `app/(public)/blog/page.tsx`
 - [x] Redesign `app/(public)/blog/[slug]/page.tsx`
 - [x] Update `globals.css` blog-content styles
-- [x] Tạo `components/blog/PostNavigation.tsx` (skipped — backend không có prev/next endpoint) (TODO: fetch logic)
+- [x] Tạo `components/blog/PostNavigation.tsx` — fetch all posts, find prev/next by slug index (server component)
 
 #### Sprint 4 — About/Profile Page
 
@@ -730,7 +730,7 @@ Triết lý: consistent với brand, không fancy. Gray là primary, cyan chỉ 
 #### Verification Checklist
 
 - [x] `next build` không TypeScript errors — Vercel build passed (deployed 2026-05-07)
-- [ ] Kiểm tra tất cả pages trên mobile 375px và desktop 1280px
+- [x] Kiểm tra tất cả pages trên mobile 375px và desktop 1280px (12/12 PASS; blog-detail pending — cần có bài published)
 - [x] WCAG AA contrast ratio — đã fix `text-blue-400` → `text-blue-600` cho readable text (commit `cd7a8e0`)
 - [x] Lighthouse Performance — đã fix `transition-all` → `transition-[transform,box-shadow]` (commit `cd7a8e0`)
 
@@ -744,23 +744,18 @@ Triết lý: consistent với brand, không fancy. Gray là primary, cyan chỉ 
 
 ## Trạng thái hiện tại (2026-05-08)
 
-### Vercel Frontend Build — CẦN FIX (chưa làm)
+### Vercel Frontend Build — ĐÃ FIX
 
-**Lỗi:**
-```
-Error: > Couldn't find any 'pages' or 'app' directory. Please create one under the project root
-Error: Command "npm run vercel-build" exited with 1
-```
+- Root Directory đã set `frontend` trên Vercel project `frontend-eta-self-61`.
+- Disabled **Ignored Build Step** để deploy mới không bị skip/cancel.
+- Frontend cần env `BACKEND_URL` trỏ đúng backend production URL.
 
-**Root cause:** Vercel frontend project (`frontend-eta-self-61.vercel.app`) kết nối đến repo `jeKai276/personal-blog` nhưng **Root Directory chưa được set thành `frontend`** — Vercel đang build từ repo root, không tìm thấy `app/`.
+### Incident log — Admin API decode + Photo URL (2026-05-08)
 
-**Fix cần làm (Vercel Dashboard UI):**
-1. Vào Vercel Dashboard → project `frontend-eta-self-61`
-2. Settings → General → Root Directory
-3. Set thành `frontend`
-4. Save → Redeploy
-
-**Không cần thay đổi code nào.**
+- Đã fix `ERR_CONTENT_DECODING_FAILED` bằng proxy response-as-text tại `frontend/app/api/[...path]/route.ts` (commit `73086fc`).
+- Đã thêm middleware strip encoding header ở backend admin handlers (commit `9b60718`).
+- Upload ảnh đã hoạt động sau khi cập nhật env R2.
+- Lưu ý quan trọng: `R2_BASE_URL` phải là public URL (`https://<bucket>.r2.dev` hoặc custom domain public), **không dùng** `*.r2.cloudflarestorage.com` cho ảnh public.
 
 ### package-lock.json — Đã xóa nhầm
 

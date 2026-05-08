@@ -1,0 +1,8 @@
+{
+  "title": "Xây dựng personal blog với Go và Next.js",
+  "slug": "xay-dung-personal-blog-voi-go-va-nextjs",
+  "content": "<h2>Giới thiệu</h2><p>Tôi vừa hoàn thành việc xây dựng website blog cá nhân này từ đầu — backend Go với Gin framework, frontend Next.js 16 với App Router, và PostgreSQL làm database.</p><h2>Tech stack</h2><p>Dự án dùng monorepo layout với <code>backend/</code> và <code>frontend/</code>. Backend follow standard Go project layout với các package <code>internal/</code>, <code>pkg/</code>, và <code>migrations/</code>.</p><h2>Những gì học được</h2><p>Đây là lần đầu tôi làm frontend nghiêm túc. TypeScript + Tailwind CSS + Next.js App Router có learning curve khá dốc nhưng kết quả rất đáng.</p><p>Phần thú vị nhất là implement presigned URL flow cho photo upload — browser upload thẳng lên Cloudflare R2 mà không qua backend, tiết kiệm bandwidth đáng kể.</p><h2>Deploy</h2><p>Backend deploy lên Vercel như một serverless Go function. Frontend cũng trên Vercel. Database dùng Neon PostgreSQL, storage dùng Cloudflare R2.</p>",
+  "excerpt": "Hành trình xây dựng personal blog từ đầu với Go backend và Next.js frontend — những gì tôi học được.",
+  "status": "published",
+  "tags": ["go", "nextjs", "postgresql", "fullstack"]
+}

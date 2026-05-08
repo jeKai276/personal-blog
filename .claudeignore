@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test coverage
+coverage/
+*.out
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temp
+tmp/
+temp/
+.cache/
+
+# Environment (keep .env.example)
+.env
+.env.local
+.env.*.local
+
+# Lock files (keep package.json, go.mod)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+go.sum
+
+# Git
+.git/
+
+# Claude artifacts
+.claude/chats/
+.claude/projects/*/[0-9a-f]*.jsonl
