@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import type { ApiResponse, Post } from '@/types'
 import { formatDate } from '@/lib/utils'
 import Badge from '@/components/ui/Badge'
+import PostNavigation from '@/components/blog/PostNavigation'
 
 export const dynamic = 'force-dynamic'
 
@@ -100,6 +101,8 @@ export default async function BlogDetailPage({ params }: Props) {
       </header>
 
       <div className="blog-content" dangerouslySetInnerHTML={{ __html: post.content }} />
+
+      <PostNavigation currentSlug={post.slug} />
     </article>
   )
 }
