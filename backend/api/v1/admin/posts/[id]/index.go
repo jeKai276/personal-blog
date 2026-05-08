@@ -15,6 +15,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORS(bootstrap.Cfg.AllowedOrigins))
+	router.Use(middleware.NoEncoding())
 
 	h := blog.NewHandler(bootstrap.BlogSvc)
 	router.PUT("/api/v1/admin/posts/:id", middleware.RequireAuth(bootstrap.AuthSvc), h.Update)

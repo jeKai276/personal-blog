@@ -15,6 +15,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORS(bootstrap.Cfg.AllowedOrigins))
+	router.Use(middleware.NoEncoding())
 
 	h := photo.NewHandler(bootstrap.PhotoSvc, bootstrap.Store)
 	router.POST("/api/v1/admin/albums/:id/photos", middleware.RequireAuth(bootstrap.AuthSvc), h.AddPhoto)

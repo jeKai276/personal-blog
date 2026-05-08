@@ -15,6 +15,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORS(bootstrap.Cfg.AllowedOrigins))
+	router.Use(middleware.NoEncoding())
 
 	h := project.NewHandler(bootstrap.ProjectSvc)
 	router.POST("/api/v1/admin/projects", middleware.RequireAuth(bootstrap.AuthSvc), h.Create)

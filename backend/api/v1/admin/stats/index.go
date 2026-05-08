@@ -15,6 +15,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORS(bootstrap.Cfg.AllowedOrigins))
+	router.Use(middleware.NoEncoding())
 
 	h := admin.NewHandler(bootstrap.AdminSvc)
 	router.GET("/api/v1/admin/stats", middleware.RequireAuth(bootstrap.AuthSvc), h.GetStats)
