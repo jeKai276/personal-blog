@@ -1,60 +1,44 @@
 import Link from 'next/link'
 
-const navLinks = [
-  { href: '/', label: 'Trang chủ' },
-  { href: '/about', label: 'Về tôi' },
-  { href: '/blog', label: 'Blog' },
-  { href: '/photos', label: 'Ảnh' },
-]
+function Logo() {
+  return (
+    <Link href="/" className="flex items-center gap-2.5 group" aria-label="Home">
+      <span
+        className="relative grid place-items-center w-8 h-8 rounded-full overflow-hidden"
+        style={{
+          background: 'radial-gradient(ellipse at 30% 30%, var(--accent) 0%, var(--accent-strong) 90%)',
+          boxShadow: '0 0 0 1px var(--line) inset',
+        }}
+      >
+        <span className="block w-2 h-2 rounded-full" style={{ background: 'var(--paper-2)', opacity: 0.9 }} />
+      </span>
+      <span className="font-serif text-[18px] tracking-tight leading-none" style={{ color: 'var(--ink)' }}>
+        just<span style={{ fontFamily: 'Caveat, cursive', color: 'var(--accent-strong)' }}>.</span>kai
+      </span>
+    </Link>
+  )
+}
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-400">
-      <div className="mx-auto max-w-4xl px-4 py-10">
-        <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-start sm:justify-between">
-          <div className="text-center sm:text-left">
-            <p className="text-lg font-bold text-blue-400">yendp</p>
-            <p className="mt-1 text-sm">Backend Developer</p>
-          </div>
-
-          <nav>
-            <ul className="flex flex-wrap justify-center gap-5 text-sm">
-              {navLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="transition-colors hover:text-blue-400">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <div className="flex gap-2">
-            <a
-              href="https://github.com/yendp"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="GitHub"
-              className="rounded-lg p-2 transition-colors hover:text-blue-400"
-            >
-              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
-              </svg>
-            </a>
-            <a
-              href="mailto:yendp27@gmail.com"
-              aria-label="Email"
-              className="rounded-lg p-2 transition-colors hover:text-blue-400"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </a>
-          </div>
+    <footer style={{ borderTop: '1px solid var(--line)' }}>
+      <div className="max-w-[1180px] mx-auto px-6 md:px-10 py-12 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Logo />
+          <span className="font-mono text-[11px]" style={{ color: 'var(--muted)' }}>
+            kept since 2026 · hanoi
+          </span>
         </div>
-
-        <div className="mt-8 border-t border-gray-800 pt-6 text-center text-xs">
-          © {new Date().getFullYear()} yendp. Built with Next.js &amp; Go.
+        <div
+          className="font-mono text-[11.5px] tracking-[0.18em] uppercase"
+          style={{ color: 'var(--accent-strong)' }}
+        >
+          work fast &mdash; live slow
+        </div>
+        <div className="flex items-center gap-5 text-[13px]" style={{ color: 'var(--muted)' }}>
+          <a href="#" className="hover:underline">RSS</a>
+          <a href="mailto:yendp27@gmail.com" className="hover:underline">Email</a>
+          <a href="https://github.com/yendp" target="_blank" rel="noopener noreferrer" className="hover:underline">GitHub</a>
         </div>
       </div>
     </footer>

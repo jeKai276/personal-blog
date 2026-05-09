@@ -50,18 +50,18 @@ export default async function AboutPage() {
   }, {})
 
   return (
-    <div className="space-y-12">
+    <div className="max-w-[1180px] mx-auto px-6 md:px-10 py-16 space-y-16">
       <ProfileHero />
 
       {/* Bio */}
-      <section className="max-w-2xl space-y-4">
-        <p className="text-lg font-medium leading-relaxed text-gray-800">
-          Tôi là Yen — backend developer với niềm đam mê xây dựng hệ thống scalable và reliable.
+      <section className="max-w-2xl space-y-5">
+        <p className="text-[17px] font-medium leading-[1.7]" style={{ color: 'var(--ink)' }}>
+          I&rsquo;m Yen — a backend developer passionate about building scalable, reliable systems.
         </p>
-        <p className="leading-[1.8] text-gray-600">
-          Tôi làm việc chủ yếu với Go và PostgreSQL, thích thiết kế API rõ ràng và viết code dễ bảo trì.
-          Hiện tại đang học frontend với React và Next.js để có thể build full-stack từ đầu đến cuối.
-          Website này là nơi tôi chia sẻ những gì học được, những chuyến đi, và cuộc sống hàng ngày.
+        <p className="text-[15px] leading-[1.8]" style={{ color: 'var(--ink-2)' }}>
+          I primarily work with Go and PostgreSQL, enjoy designing clear APIs, and write code that&rsquo;s easy to maintain.
+          Currently learning frontend with React and Next.js to build full-stack from end to end.
+          This site is where I share what I learn, trips I take, and everyday life.
         </p>
         <SocialLinks />
       </section>
@@ -69,14 +69,14 @@ export default async function AboutPage() {
       {/* Skills */}
       {skills.length > 0 && (
         <section>
-          <SectionHeading label="Kỹ năng" title="Skills" />
-          <div className="space-y-6">
+          <SectionHeading label="☼ — Skills" title="Tech stack." />
+          <div className="space-y-8">
             {Object.entries(skillsByCategory).map(([category, catSkills]) => (
               <div key={category}>
-                <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-blue-500 capitalize">
+                <h3 className="font-mono text-[11px] tracking-[0.18em] uppercase mb-4 capitalize" style={{ color: 'var(--muted)' }}>
                   {category}
                 </h3>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {catSkills.map((skill) => (
                     <SkillBadge key={skill.id} skill={skill} />
                   ))}
@@ -90,8 +90,8 @@ export default async function AboutPage() {
       {/* Projects */}
       {projects.length > 0 && (
         <section>
-          <SectionHeading label="Dự án" title="Projects" />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <SectionHeading label="✦ — Projects" title="Things I&rsquo;ve shipped." />
+          <div className="grid gap-5 sm:grid-cols-2">
             {projects.map((project) => (
               <ProjectCard key={project.id} project={project} />
             ))}

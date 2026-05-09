@@ -1,6 +1,5 @@
 import Image from 'next/image'
 import type { Project } from '@/types'
-import Badge from '@/components/ui/Badge'
 
 interface ProjectCardProps {
   project: Project
@@ -8,11 +7,17 @@ interface ProjectCardProps {
 
 export default function ProjectCard({ project }: ProjectCardProps) {
   return (
-    <div className={`flex flex-col space-y-3 rounded-2xl p-5 transition-shadow hover:shadow-md ${
-      project.is_featured
-        ? 'border-2 border-blue-200 bg-gradient-to-br from-white to-blue-50'
-        : 'border border-gray-200 bg-white'
-    }`}>
+    <div
+      className="flex flex-col space-y-4 rounded-2xl p-6 transition-all"
+      style={{
+        border: project.is_featured
+          ? '1px solid color-mix(in oklch, var(--accent-strong) 40%, var(--line))'
+          : '1px solid var(--line)',
+        background: project.is_featured
+          ? 'linear-gradient(135deg, var(--accent-soft) 0%, var(--paper-2) 100%)'
+          : 'var(--paper-2)',
+      }}
+    >
       {project.cover_image_url && (
         <div className="aspect-video overflow-hidden rounded-xl">
           <Image
@@ -25,31 +30,45 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         </div>
       )}
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+        <h3 className="font-serif text-[20px] tracking-tight" style={{ color: 'var(--ink)' }}>
+          {project.title}
+        </h3>
         {project.is_featured && (
-          <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-600">
+          <span
+            className="shrink-0 font-mono text-[10px] tracking-[0.14em] uppercase px-2.5 py-1 rounded-full"
+            style={{ color: 'var(--accent-strong)', background: 'var(--accent-soft)' }}
+          >
             Featured
           </span>
         )}
       </div>
       {project.description && (
-        <p className="text-sm leading-relaxed text-gray-500">{project.description}</p>
+        <p className="text-[14px] leading-[1.65]" style={{ color: 'var(--ink-2)' }}>
+          {project.description}
+        </p>
       )}
       {project.tech_stack.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {project.tech_stack.map((tech) => (
-            <Badge key={tech} variant="brand">{tech}</Badge>
+            <span
+              key={tech}
+              className="font-mono text-[10px] tracking-[0.12em] uppercase px-2 py-1 rounded-full"
+              style={{ color: 'var(--accent-strong)', background: 'var(--accent-soft)' }}
+            >
+              {tech}
+            </span>
           ))}
         </div>
       )}
       {(project.github_url || project.demo_url) && (
-        <div className="flex gap-4 pt-1 text-sm">
+        <div className="flex gap-5 pt-1 text-[13px] font-mono">
           {project.github_url && (
             <a
               href={project.github_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-blue-600 hover:text-blue-700"
+              className="hover:underline"
+              style={{ color: 'var(--accent-strong)' }}
             >
               GitHub →
             </a>
@@ -59,7 +78,8 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               href={project.demo_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-blue-600 hover:text-blue-700"
+              className="hover:underline"
+              style={{ color: 'var(--accent-strong)' }}
             >
               Demo →
             </a>

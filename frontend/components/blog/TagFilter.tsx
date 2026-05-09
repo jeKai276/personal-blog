@@ -17,19 +17,25 @@ export default function TagFilter({ tags, selected }: TagFilterProps) {
     <div className="flex flex-wrap gap-2">
       <button
         onClick={() => handleSelect(null)}
-        className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-          !selected ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600'
-        }`}
+        className="font-mono text-[10px] tracking-[0.14em] uppercase px-3 py-1.5 rounded-full transition-colors"
+        style={
+          !selected
+            ? { background: 'var(--ink)', color: 'var(--paper)' }
+            : { background: 'var(--accent-soft)', color: 'var(--accent-strong)' }
+        }
       >
-        Tất cả
+        All
       </button>
       {tags.map((tag) => (
         <button
           key={tag}
           onClick={() => handleSelect(tag)}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-            selected === tag ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600'
-          }`}
+          className="font-mono text-[10px] tracking-[0.14em] uppercase px-3 py-1.5 rounded-full transition-colors"
+          style={
+            selected === tag
+              ? { background: 'var(--ink)', color: 'var(--paper)' }
+              : { background: 'var(--accent-soft)', color: 'var(--accent-strong)' }
+          }
         >
           {tag}
         </button>

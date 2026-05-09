@@ -38,11 +38,20 @@ export default async function BlogListPage({ searchParams }: Props) {
   const filteredPosts = selectedTag ? posts.filter((p) => p.tags.includes(selectedTag)) : posts
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-widest text-blue-500">Viết lách</p>
-        <h1 className="text-4xl font-bold text-gray-900">Blog</h1>
-        <p className="text-gray-500">Bài viết về code, backend, frontend và cuộc sống hàng ngày.</p>
+    <div className="max-w-[1180px] mx-auto px-6 md:px-10 py-16 space-y-10">
+      <div className="space-y-3">
+        <p className="font-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: 'var(--muted)' }}>
+          ✦ — Writing
+        </p>
+        <h1
+          className="font-serif font-light tracking-tight leading-[1.05]"
+          style={{ fontSize: 'clamp(36px, 5vw, 64px)', color: 'var(--ink)' }}
+        >
+          Letters from the desk.
+        </h1>
+        <p className="text-[15px] max-w-[52ch]" style={{ color: 'var(--ink-2)' }}>
+          Notes on code, backend engineering, and slow life.
+        </p>
       </div>
 
       {allTags.length > 0 && (

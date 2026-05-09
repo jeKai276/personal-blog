@@ -61,8 +61,11 @@ export default async function BlogDetailPage({ params }: Props) {
 
   if (fetchError) {
     return (
-      <div className="rounded-xl bg-red-50 p-4 text-sm text-red-600">
-        Không thể tải bài viết: {fetchError}
+      <div
+        className="max-w-[1180px] mx-auto px-6 md:px-10 py-16 rounded-xl text-[13px] font-mono"
+        style={{ background: 'oklch(0.94 0.05 25)', color: 'oklch(0.45 0.15 25)' }}
+      >
+        Could not load post: {fetchError}
       </div>
     )
   }
@@ -72,9 +75,9 @@ export default async function BlogDetailPage({ params }: Props) {
   const readingTime = estimateReadingTime(post.content)
 
   return (
-    <article className="mx-auto max-w-2xl">
+    <article className="max-w-[720px] mx-auto px-6 md:px-10 py-16">
       {post.cover_image_url && (
-        <div className="mb-8 aspect-video overflow-hidden rounded-2xl sm:aspect-[21/9]">
+        <div className="mb-10 aspect-video overflow-hidden rounded-2xl sm:aspect-[21/9]">
           <Image
             src={post.cover_image_url}
             alt={post.title}
@@ -86,17 +89,28 @@ export default async function BlogDetailPage({ params }: Props) {
         </div>
       )}
 
-      <header className="mb-8 space-y-4 border-b border-gray-100 pb-8">
+      <header className="mb-10 space-y-5 pb-10" style={{ borderBottom: '1px solid var(--line)' }}>
         {post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {post.tags.map((tag) => (
-              <Badge key={tag} variant="brand">{tag}</Badge>
+              <span
+                key={tag}
+                className="font-mono text-[10px] tracking-[0.14em] uppercase px-2.5 py-1 rounded-full"
+                style={{ color: 'var(--accent-strong)', background: 'var(--accent-soft)' }}
+              >
+                {tag}
+              </span>
             ))}
           </div>
         )}
-        <h1 className="text-4xl font-bold leading-tight text-gray-900">{post.title}</h1>
-        <p className="text-sm text-gray-400">
-          {formatDate(post.created_at)} &middot; {readingTime} phút đọc
+        <h1
+          className="font-serif font-light tracking-tight leading-[1.08]"
+          style={{ fontSize: 'clamp(28px, 4.5vw, 48px)', color: 'var(--ink)' }}
+        >
+          {post.title}
+        </h1>
+        <p className="font-mono text-[12px]" style={{ color: 'var(--muted)' }}>
+          {formatDate(post.created_at)} &middot; {readingTime} min read
         </p>
       </header>
 

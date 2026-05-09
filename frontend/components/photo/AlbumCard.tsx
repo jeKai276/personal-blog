@@ -1,5 +1,7 @@
+'use client'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState } from 'react'
 import type { Album } from '@/types'
 
 interface AlbumCardProps {
@@ -7,52 +9,102 @@ interface AlbumCardProps {
 }
 
 export default function AlbumCard({ album }: AlbumCardProps) {
+  const [hover, setHover] = useState(false)
   const coverPhoto = album.photos?.find((p) => p.id === album.cover_photo_id) ?? album.photos?.[0]
   const thumb = coverPhoto?.thumbnail_url || coverPhoto?.url
-  const photoCount = album.photos?.length
+  const photoCount = album.photos?.length ?? 0
 
   return (
-    <Link href={`/photos/${album.id}`} className="group block">
-      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50">
-        {thumb ? (
-          <Image
-            src={thumb}
-            alt={album.title}
-            fill
-            className="object-cover transition duration-300 group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm font-medium text-blue-300">
-            {album.title}
+    <Link
+      href={`/photos/${album.id}`}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="relative block rounded-2xl overflow-hidden"
+      style={{
+        background: 'var(--paper-2)',
+        border: `1px solid ${hover ? 'color-mix(in oklch, var(--accent-strong) 30%, var(--line))' : 'var(--line)'}`,
+        boxShadow: hover
+          ? '0 22px 44px -22px rgba(14,19,26,.22)'
+          : '0 1px 0 rgba(255,255,255,.5) inset',
+        transition: 'box-shadow .4s, border-color .4s',
+      }}
+    >
+      {/* Image */}
+      <div className="relative aspect-[4/3] overflow-hidden">
+        <div
+          className="absolute inset-0 transition-transform duration-700"
+          style={{ transform: hover ? 'scale(1.04)' : 'scale(1)' }}
+        >
+          {thumb ? (
+            <Image
+              src={thumb}
+              alt={album.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
+          ) : (
+            <AlbumPlaceholder title={album.title} />
+          )}
+        </div>
+
+        {/* Photo count chip */}
+        {photoCount > 0 && (
+          <div
+            className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10.5px] font-mono tracking-wider"
+            style={{
+              background: 'color-mix(in oklch, var(--paper-2) 70%, transparent)',
+              backdropFilter: 'blur(8px)',
+              color: 'var(--ink)',
+              border: '1px solid var(--line)',
+            }}
+          >
+            {photoCount} photos
           </div>
         )}
-
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-
-        {/* Photo count badge */}
-        {photoCount !== undefined && (
-          <span className="absolute right-2 top-2 rounded-full bg-black/50 px-2 py-0.5 text-xs text-white backdrop-blur-sm">
-            {photoCount} ảnh
-          </span>
-        )}
       </div>
 
-      <div className="mt-3 space-y-0.5">
-        <p className="font-semibold text-gray-900 transition-colors group-hover:text-blue-500">
-          {album.title}
-        </p>
-        {album.location && (
-          <p className="flex items-center gap-1 text-sm text-gray-500">
-            <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            {album.location}
-          </p>
-        )}
+      {/* Footer */}
+      <div className="p-5 pt-4 flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h3 className="font-serif text-[18px] leading-snug truncate" style={{ color: 'var(--ink)' }}>
+            {album.title}
+          </h3>
+          {album.location && (
+            <div className="mt-1 font-mono text-[11px]" style={{ color: 'var(--muted)' }}>
+              {album.location}
+              {album.taken_at && <> &middot; {new Date(album.taken_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</>}
+            </div>
+          )}
+        </div>
+        <span
+          className="shrink-0 grid place-items-center w-9 h-9 rounded-full transition-all"
+          style={{
+            background: hover ? 'var(--accent)' : 'transparent',
+            border: '1px solid var(--line)',
+            color: 'var(--ink)',
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M7 17L17 7M9 7h8v8" />
+          </svg>
+        </span>
       </div>
     </Link>
+  )
+}
+
+function AlbumPlaceholder({ title }: { title: string }) {
+  return (
+    <div
+      className="w-full h-full flex items-end p-4"
+      style={{
+        background: 'linear-gradient(135deg, var(--accent-soft) 0%, var(--paper-2) 100%)',
+      }}
+    >
+      <span className="font-mono text-[11px] tracking-wider" style={{ color: 'var(--muted)' }}>
+        // {title}
+      </span>
+    </div>
   )
 }

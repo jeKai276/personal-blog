@@ -2,27 +2,134 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prose styles for TipTap HTML content in blog posts */
+/* ─── Design tokens ──────────────────────────────────────────────────────── */
+:root {
+  /* Dawn — warm cream, peach, lavender, sage */
+  --paper:    #f4ede0;
+  --paper-2:  #faf4e7;
+  --ink:      #1f1a26;
+  --ink-2:    #4a4256;
+  --muted:    #7a7186;
+  --line:     rgba(31, 26, 38, 0.10);
+
+  --accent:        oklch(0.88 0.08 28);
+  --accent-strong: oklch(0.58 0.14 28);
+  --accent-soft:   oklch(0.94 0.05 28);
+
+  /* Painted sky — light (dawn) */
+  --sky-1: oklch(0.96 0.04 30);
+  --sky-2: oklch(0.92 0.05 50);
+  --sky-3: oklch(0.93 0.05 320);
+  --sky-4: oklch(0.95 0.04 220);
+  --glow-warm: oklch(0.94 0.07 35 / 0.5);
+
+  --door-1: oklch(0.94 0.05 35);
+  --door-2: oklch(0.88 0.07 320);
+  --door-3: oklch(0.84 0.08 250);
+
+  --star: rgba(31, 26, 38, 0.4);
+}
+
+.dark {
+  /* Midnight — indigo, plum, soft cream stars */
+  --paper:    #0e1226;
+  --paper-2:  #181a36;
+  --ink:      #ebe5f4;
+  --ink-2:    #c1bcd0;
+  --muted:    #8d87a3;
+  --line:     rgba(235, 229, 244, 0.10);
+
+  --accent:        oklch(0.78 0.10 28);
+  --accent-strong: oklch(0.84 0.13 28);
+  --accent-soft:   oklch(0.32 0.07 28);
+
+  --sky-1: oklch(0.22 0.05 280);
+  --sky-2: oklch(0.18 0.06 260);
+  --sky-3: oklch(0.16 0.07 240);
+  --sky-4: oklch(0.12 0.05 230);
+  --glow-warm: oklch(0.55 0.10 30 / 0.35);
+
+  --door-1: oklch(0.32 0.08 280);
+  --door-2: oklch(0.26 0.09 250);
+  --door-3: oklch(0.20 0.07 220);
+
+  --star: rgba(244, 235, 220, 0.85);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--ink);
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--accent-strong) 35%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--accent-strong) 55%, transparent);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+/* ─── Prose styles for TipTap HTML content ──────────────────────────────── */
 .blog-content h1 { @apply text-3xl font-bold mt-8 mb-4; }
 .blog-content h2 { @apply text-2xl font-bold mt-6 mb-3; }
 .blog-content h3 { @apply text-xl font-semibold mt-5 mb-2; }
 .blog-content p  { @apply mb-4 leading-[1.8]; }
 .blog-content ul { @apply list-disc list-inside mb-4 space-y-1; }
 .blog-content ol { @apply list-decimal list-inside mb-4 space-y-1; }
-.blog-content blockquote { @apply border-l-4 border-blue-200 pl-4 italic text-gray-600 my-4; }
-.blog-content code { @apply bg-blue-50 text-blue-800 px-1.5 py-0.5 rounded text-sm font-mono; }
+.blog-content blockquote {
+  border-left: 4px solid var(--accent);
+  @apply pl-4 italic my-4;
+  color: var(--ink-2);
+}
+.blog-content code {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  @apply px-1.5 py-0.5 rounded text-sm font-mono;
+}
 .blog-content pre { @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-4 text-sm; }
-.blog-content pre code { @apply bg-transparent p-0; }
-.blog-content a { @apply text-blue-600 hover:underline; }
+.blog-content pre code { @apply bg-transparent p-0; color: inherit; }
+.blog-content a { color: var(--accent-strong); @apply hover:underline; }
 .blog-content img { @apply rounded-lg my-4 max-w-full; }
 .blog-content hr { @apply border-gray-200 my-8; }
 
-/* TipTap editor (edit mode) */
+/* ─── TipTap editor ──────────────────────────────────────────────────────── */
 .ProseMirror { @apply outline-none; }
 .ProseMirror p.is-empty::before {
-  color: #9ca3af;
+  color: var(--muted);
   content: attr(data-placeholder);
   float: left;
   height: 0;
   pointer-events: none;
+}
+
+/* ─── Lift card utility ──────────────────────────────────────────────────── */
+.lift {
+  transition: transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+              box-shadow 0.3s ease;
+}
+.lift:hover {
+  transform: translateY(-6px);
 }

@@ -28,26 +28,41 @@ export default async function PhotosPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-widest text-blue-500">Khoảnh khắc</p>
-        <h1 className="text-4xl font-bold text-gray-900">Ảnh</h1>
-        <p className="text-gray-500">Những chuyến đi và cuộc sống hàng ngày.</p>
+    <div className="max-w-[1180px] mx-auto px-6 md:px-10 py-16 space-y-10">
+      <div className="space-y-3">
+        <p className="font-mono text-[11px] tracking-[0.22em] uppercase" style={{ color: 'var(--muted)' }}>
+          02 — Photo
+        </p>
+        <h1
+          className="font-serif font-light tracking-tight leading-[1.05]"
+          style={{ fontSize: 'clamp(36px, 5vw, 64px)', color: 'var(--ink)' }}
+        >
+          Albums &mdash; quiet places.
+        </h1>
+        <p className="text-[15px] max-w-[52ch]" style={{ color: 'var(--ink-2)' }}>
+          Photographs from trips and everyday life.
+        </p>
       </div>
 
       {error ? (
-        <div className="rounded-xl bg-red-50 p-4 text-sm text-red-600">
-          Không thể tải albums: {error}
+        <div
+          className="rounded-xl p-4 text-[13px] font-mono"
+          style={{ background: 'oklch(0.94 0.05 25)', color: 'oklch(0.45 0.15 25)' }}
+        >
+          Could not load albums: {error}
         </div>
       ) : albums.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-gray-200 py-20 text-center">
-          <svg className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div
+          className="flex flex-col items-center gap-3 rounded-2xl py-20 text-center"
+          style={{ border: '1px dashed var(--line)' }}
+        >
+          <svg className="h-10 w-10" style={{ color: 'var(--muted)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <p className="text-sm font-medium text-gray-500">Chưa có album nào</p>
+          <p className="text-[13px] font-mono" style={{ color: 'var(--muted)' }}>No albums yet.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {albums.map((album) => (
             <AlbumCard key={album.id} album={album} />
           ))}
