@@ -9,11 +9,13 @@ export const dynamic = 'force-dynamic'
 const BASE_URL = `${process.env.BACKEND_URL ?? 'http://localhost:8080'}/api/v1`
 
 interface Stats {
-  posts: number
-  albums: number
-  photos: number
-  skills: number
-  projects: number
+  total_posts: number
+  published_posts: number
+  draft_posts: number
+  total_albums: number
+  total_photos: number
+  total_skills: number
+  total_projects: number
 }
 
 const icons: Record<string, React.ReactNode> = {
@@ -63,11 +65,11 @@ export default async function DashboardPage() {
   }
 
   const cards = [
-    { label: 'Bài viết', value: stats?.posts ?? 0, href: '/admin/blog' },
-    { label: 'Albums', value: stats?.albums ?? 0, href: '/admin/photos' },
-    { label: 'Ảnh', value: stats?.photos ?? 0, href: '/admin/photos' },
-    { label: 'Skills', value: stats?.skills ?? 0, href: '/admin/dashboard' },
-    { label: 'Projects', value: stats?.projects ?? 0, href: '/admin/dashboard' },
+    { label: 'Bài viết', value: stats?.total_posts ?? 0, href: '/admin/blog' },
+    { label: 'Albums', value: stats?.total_albums ?? 0, href: '/admin/photos' },
+    { label: 'Ảnh', value: stats?.total_photos ?? 0, href: '/admin/photos' },
+    { label: 'Skills', value: stats?.total_skills ?? 0, href: '/admin/dashboard' },
+    { label: 'Projects', value: stats?.total_projects ?? 0, href: '/admin/dashboard' },
   ]
 
   return (

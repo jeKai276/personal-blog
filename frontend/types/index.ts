@@ -76,9 +76,11 @@ export interface PostsListData {
 
 // Shape of GET /admin/stats response data
 export interface AdminStats {
-  posts: number
-  albums: number
-  photos: number
-  skills: number
-  projects: number
+  total_posts: number
+  published_posts: number
+  draft_posts: number
+  total_albums: number
+  total_photos: number
+  total_skills: number
+  total_projects: number
 }
