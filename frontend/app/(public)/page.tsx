@@ -3,6 +3,7 @@ import type { ApiResponse, Post, PostsListData, Album } from '@/types'
 import PaintedSky from '@/components/home/PaintedSky'
 import HeroSection from '@/components/home/HeroSection'
 import AboutSection from '@/components/home/AboutSection'
+import ThemeScrollCanvas from '@/components/home/ThemeScrollCanvas'
 import NewsletterSection from '@/components/home/NewsletterSection'
 import SectionHeading from '@/components/ui/SectionHeading'
 import BlogCard from '@/components/blog/BlogCard'
@@ -54,6 +55,9 @@ export default async function HomePage() {
 
       {/* Hero — full viewport */}
       <HeroSection />
+
+      {/* ── Scroll Canvas Animation ─────────────────────────────────── */}
+      <ThemeScrollCanvas />
 
       {/* ── Blog posts ─────────────────────────────────────────────── */}
       {recentPosts.length > 0 && (
