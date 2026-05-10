@@ -12,11 +12,14 @@ export default function ThemeScrollCanvas() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLElement>(null)
+  const requestRef = useRef<number | null>(null)
+
+  // Cache canvas dimensions to avoid layout thrashing on scroll
+  const canvasSize = useRef({ width: 0, height: 0 })
 
   // We maintain arrays of HTMLImageElements for caching
   const imagesRef = useRef<HTMLImageElement[]>([])
-  const [imagesLoaded, setImagesLoaded] = useState(false)
-  const currentFrameIndex = useRef(1) // Keep track of the currently drawn frame
+  const currentFrameIndex = useRef(-1) // Track currently requested frame to avoid duplicates
 
   // Scroll tracking within this specific section
   const { scrollYProgress } = useScroll({
@@ -27,97 +30,119 @@ export default function ThemeScrollCanvas() {
   // Map scroll progress (0 to 1) to frame index (1 to FRAME_COUNT)
   const frameIndex = useTransform(scrollYProgress, [0, 1], [1, FRAME_COUNT])
 
+  // Resize handler to cache canvas dimensions
+  useEffect(() => {
+    const updateSize = () => {
+      if (canvasRef.current) {
+        const { width, height } = canvasRef.current.getBoundingClientRect()
+        // Multiply by devicePixelRatio for sharper images on retina screens if desired,
+        // but for performance, matching the CSS pixels is usually best for large image sequences.
+        canvasSize.current = { width, height }
+
+        if (canvasRef.current.width !== width || canvasRef.current.height !== height) {
+          canvasRef.current.width = width
+          canvasRef.current.height = height
+          // Redraw current frame after resize
+          if (currentFrameIndex.current !== -1) {
+            const temp = currentFrameIndex.current
+            currentFrameIndex.current = -1 // Force redraw
+            drawFrame(temp)
+          }
+        }
+      }
+    }
+
+    updateSize()
+    window.addEventListener('resize', updateSize)
+    return () => window.removeEventListener('resize', updateSize)
+  }, [])
+
   // Preload images whenever the theme changes
   useEffect(() => {
-    setImagesLoaded(false)
+    let isCancelled = false
     let loadedCount = 0
-    const newImages: HTMLImageElement[] = []
+    const newImages: HTMLImageElement[] = new Array(FRAME_COUNT)
     const mode = isDark ? 'dark' : 'light'
 
     for (let i = 1; i <= FRAME_COUNT; i++) {
       const img = new Image()
-      // format: 001.webp, 010.webp, 120.webp
       const paddedIndex = String(i).padStart(3, '0')
       img.src = `/frames/${mode}/${paddedIndex}.webp`
 
-      img.onload = () => {
+      const handleLoadOrError = () => {
+        if (isCancelled) return
         loadedCount++
         if (loadedCount === FRAME_COUNT) {
           imagesRef.current = newImages
-          setImagesLoaded(true)
-          // As soon as images are loaded, draw the current frame to prevent flash
-          drawFrame(currentFrameIndex.current)
+          // Force redraw of the current frame position once everything loads
+          const current = Math.round(frameIndex.get())
+          currentFrameIndex.current = -1
+          drawFrame(current)
         }
       }
 
-      // Also handle error cases so it doesn't hang indefinitely
-      img.onerror = () => {
-        loadedCount++
-        if (loadedCount === FRAME_COUNT) {
-          imagesRef.current = newImages
-          setImagesLoaded(true)
-        }
-      }
+      img.onload = handleLoadOrError
+      img.onerror = handleLoadOrError
 
-      newImages.push(img)
+      newImages[i - 1] = img
     }
-  }, [isDark])
+
+    return () => {
+      isCancelled = true
+    }
+  }, [isDark, frameIndex])
 
   // Function to draw a specific frame onto the canvas
   const drawFrame = (index: number) => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { alpha: false }) // Optimize: disable alpha blending if possible
     if (!ctx) return
 
     // Ensure we don't go out of bounds
     const safeIndex = Math.max(1, Math.min(index, FRAME_COUNT))
+
+    // Skip if we are already drawing this exact frame
+    if (safeIndex === currentFrameIndex.current) return
     currentFrameIndex.current = safeIndex
+
+    // Check if images are fully loaded
+    if (imagesRef.current.length !== FRAME_COUNT) return
 
     const image = imagesRef.current[safeIndex - 1]
     if (!image || !image.complete || image.naturalWidth === 0) return
 
-    // Sync canvas resolution to CSS size for crisp drawing
-    const { width, height } = canvas.getBoundingClientRect()
-    // Optimization: only resize if different
-    if (canvas.width !== width || canvas.height !== height) {
-      canvas.width = width
-      canvas.height = height
-    }
+    const { width: canvasWidth, height: canvasHeight } = canvasSize.current
+    if (canvasWidth === 0 || canvasHeight === 0) return
 
     // Object-fit: cover logic
-    const scale = Math.max(canvas.width / image.width, canvas.height / image.height)
+    const scale = Math.max(canvasWidth / image.width, canvasHeight / image.height)
     const drawWidth = image.width * scale
     const drawHeight = image.height * scale
 
     // Center the image
-    const drawX = (canvas.width - drawWidth) / 2
-    const drawY = (canvas.height - drawHeight) / 2
+    const drawX = (canvasWidth - drawWidth) / 2
+    const drawY = (canvasHeight - drawHeight) / 2
+
+    // Cancel any pending paint to prevent out-of-order drawing
+    if (requestRef.current !== null) {
+      cancelAnimationFrame(requestRef.current)
+    }
 
     // Use requestAnimationFrame for smooth painting
-    requestAnimationFrame(() => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+    requestRef.current = requestAnimationFrame(() => {
+      // ctx.clearRect is not strictly necessary if we overwrite the entire canvas with drawImage,
+      // but since the image might not perfectly match the aspect ratio and we might have margins
+      // (though object-fit: cover ensures we don't), it's safe to fill.
+      // However, with { alpha: false }, the browser treats it as opaque and drawImage is faster.
       ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight)
+      requestRef.current = null
     })
   }
 
-  // Draw immediately on resize to prevent stretching
-  useEffect(() => {
-    const handleResize = () => {
-      if (imagesLoaded) {
-        drawFrame(currentFrameIndex.current)
-      }
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [imagesLoaded])
-
   // When scroll changes, update the canvas
   useMotionValueEvent(frameIndex, 'change', (latest) => {
-    if (imagesLoaded) {
-      // Use Math.round to get an integer frame index
-      drawFrame(Math.round(latest))
-    }
+    drawFrame(Math.round(latest))
   })
 
   return (
@@ -125,7 +150,7 @@ export default function ThemeScrollCanvas() {
     <section ref={containerRef} className="relative h-[300vh] w-full">
 
       {/* Sticky container holds the canvas and overlay content in the viewport */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden">
+      <div className="sticky top-0 h-screen w-full overflow-hidden bg-[var(--paper)]">
 
         {/* ① Canvas — full-bleed, behind everything */}
         <canvas
@@ -134,9 +159,7 @@ export default function ThemeScrollCanvas() {
           style={{ zIndex: -1 }}
         />
 
-        {/* ② Theme-adaptive readability overlay
-             Light: bg-white/30  →  soft white veil, lets canvas show
-             Dark:  bg-black/50  →  deeper scrim so light text stays legible */}
+        {/* ② Theme-adaptive readability overlay */}
         <div
           className={`absolute inset-0 transition-colors duration-700 pointer-events-none ${
             isDark ? 'bg-black/50' : 'bg-white/30'
