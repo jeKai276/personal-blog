@@ -12,14 +12,13 @@ export default function ThemeScrollCanvas() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLElement>(null)
-  const requestRef = useRef<number | null>(null)
 
-  // Cache canvas dimensions to avoid layout thrashing on scroll
+  // Cache canvas dimensions to avoid layout thrashing
   const canvasSize = useRef({ width: 0, height: 0 })
 
-  // We maintain arrays of HTMLImageElements for caching
-  const imagesRef = useRef<HTMLImageElement[]>([])
-  const currentFrameIndex = useRef(-1) // Track currently requested frame to avoid duplicates
+  // We maintain arrays of ImageBitmap (or HTMLImageElement fallback) for instant GPU drawing
+  const imagesRef = useRef<(ImageBitmap | HTMLImageElement)[]>([])
+  const currentFrameIndex = useRef(-1) // Track currently requested frame
 
   // Scroll tracking within this specific section
   const { scrollYProgress } = useScroll({
@@ -35,8 +34,6 @@ export default function ThemeScrollCanvas() {
     const updateSize = () => {
       if (canvasRef.current) {
         const { width, height } = canvasRef.current.getBoundingClientRect()
-        // Multiply by devicePixelRatio for sharper images on retina screens if desired,
-        // but for performance, matching the CSS pixels is usually best for large image sequences.
         canvasSize.current = { width, height }
 
         if (canvasRef.current.width !== width || canvasRef.current.height !== height) {
@@ -57,11 +54,11 @@ export default function ThemeScrollCanvas() {
     return () => window.removeEventListener('resize', updateSize)
   }, [])
 
-  // Preload images whenever the theme changes
+  // Preload and DECODE images whenever the theme changes
   useEffect(() => {
     let isCancelled = false
     let loadedCount = 0
-    const newImages: HTMLImageElement[] = new Array(FRAME_COUNT)
+    const newImages: (ImageBitmap | HTMLImageElement)[] = new Array(FRAME_COUNT)
     const mode = isDark ? 'dark' : 'light'
 
     for (let i = 1; i <= FRAME_COUNT; i++) {
@@ -69,10 +66,21 @@ export default function ThemeScrollCanvas() {
       const paddedIndex = String(i).padStart(3, '0')
       img.src = `/frames/${mode}/${paddedIndex}.webp`
 
-      const handleLoadOrError = () => {
-        if (isCancelled) return
+      const handleReady = (imageSource: ImageBitmap | HTMLImageElement) => {
+        if (isCancelled) {
+          // Clean up ImageBitmap if component unmounted before we finished
+          if ('close' in imageSource) imageSource.close()
+          return
+        }
+        newImages[i - 1] = imageSource
         loadedCount++
+
         if (loadedCount === FRAME_COUNT) {
+          // Clean up old bitmaps from memory
+          imagesRef.current.forEach(old => {
+            if (old && 'close' in old) old.close()
+          })
+
           imagesRef.current = newImages
           // Force redraw of the current frame position once everything loads
           const current = Math.round(frameIndex.get())
@@ -81,22 +89,32 @@ export default function ThemeScrollCanvas() {
         }
       }
 
-      img.onload = handleLoadOrError
-      img.onerror = handleLoadOrError
+      img.onload = async () => {
+        try {
+          // Off-thread decoding into GPU memory. Prevents main thread stutter!
+          const bitmap = await window.createImageBitmap(img)
+          handleReady(bitmap)
+        } catch (e) {
+          // Fallback to normal image if createImageBitmap is not supported or fails
+          handleReady(img)
+        }
+      }
 
-      newImages[i - 1] = img
+      img.onerror = () => {
+        handleReady(img) // Push broken image to maintain array index, drawFrame will ignore it
+      }
     }
 
     return () => {
       isCancelled = true
     }
-  }, [isDark, frameIndex])
+  }, [isDark]) // Ensure frameIndex is not a dependency so it doesn't re-trigger preloading
 
   // Function to draw a specific frame onto the canvas
   const drawFrame = (index: number) => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d', { alpha: false }) // Optimize: disable alpha blending if possible
+    const ctx = canvas.getContext('2d', { alpha: false }) // Disable alpha for perf
     if (!ctx) return
 
     // Ensure we don't go out of bounds
@@ -110,34 +128,28 @@ export default function ThemeScrollCanvas() {
     if (imagesRef.current.length !== FRAME_COUNT) return
 
     const image = imagesRef.current[safeIndex - 1]
-    if (!image || !image.complete || image.naturalWidth === 0) return
+    if (!image) return
+    // Check if valid (ImageBitmap has width, HTMLImageElement has naturalWidth)
+    const imgWidth = 'naturalWidth' in image ? image.naturalWidth : image.width
+    const imgHeight = 'naturalHeight' in image ? image.naturalHeight : image.height
+    if (imgWidth === 0) return
 
     const { width: canvasWidth, height: canvasHeight } = canvasSize.current
     if (canvasWidth === 0 || canvasHeight === 0) return
 
     // Object-fit: cover logic
-    const scale = Math.max(canvasWidth / image.width, canvasHeight / image.height)
-    const drawWidth = image.width * scale
-    const drawHeight = image.height * scale
+    const scale = Math.max(canvasWidth / imgWidth, canvasHeight / imgHeight)
+    const drawWidth = imgWidth * scale
+    const drawHeight = imgHeight * scale
 
     // Center the image
     const drawX = (canvasWidth - drawWidth) / 2
     const drawY = (canvasHeight - drawHeight) / 2
 
-    // Cancel any pending paint to prevent out-of-order drawing
-    if (requestRef.current !== null) {
-      cancelAnimationFrame(requestRef.current)
-    }
-
-    // Use requestAnimationFrame for smooth painting
-    requestRef.current = requestAnimationFrame(() => {
-      // ctx.clearRect is not strictly necessary if we overwrite the entire canvas with drawImage,
-      // but since the image might not perfectly match the aspect ratio and we might have margins
-      // (though object-fit: cover ensures we don't), it's safe to fill.
-      // However, with { alpha: false }, the browser treats it as opaque and drawImage is faster.
-      ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight)
-      requestRef.current = null
-    })
+    // Framer Motion's useMotionValueEvent is already synced to the animation frame.
+    // Drawing synchronously here eliminates the 1-frame lag and prevents the "flash"
+    // of an old frame when scrolling rapidly back and forth.
+    ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight)
   }
 
   // When scroll changes, update the canvas
