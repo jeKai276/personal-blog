@@ -6,15 +6,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from './ThemeProvider'
 
 const NAV_LINKS = [
-  { href: '/', label: 'Home' },
-  { href: '/about', label: 'About me' },
-  { href: '/blog', label: 'Blog' },
-  { href: '/photos', label: 'Photo' },
+  { href: '/', label: 'Here' },
+  { href: '/about', label: 'Soul' },
+  { href: '/blog', label: 'Letter' },
+  { href: '/photos', label: 'Moment' },
 ]
 
 function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-2.5 group" aria-label="Home">
+    <Link href="/" className="flex items-center gap-2.5 group" aria-label="Here">
       <span
         className="relative grid place-items-center w-9 h-9 rounded-full overflow-hidden"
         style={{
@@ -38,7 +38,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const isDark = theme === 'dark'
 
-  const activeLabel = NAV_LINKS.find((l) => l.href === pathname)?.label ?? 'Home'
+  const activeLabel = NAV_LINKS.find((l) => l.href === pathname)?.label ?? 'Here'
   const [active, setActive] = useState(activeLabel)
 
   return (
