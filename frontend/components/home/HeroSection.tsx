@@ -45,7 +45,7 @@ export default function HeroSection() {
           className="mt-10 max-w-[58ch] text-[17px] leading-[1.75]"
           style={{ color: 'var(--ink-2)' }}
         >
-          Hi, I&rsquo;m <em style={{ color: 'var(--accent-strong)', fontStyle: 'italic' }}>Yen</em> — a backend
+          Hi, I&rsquo;m <em style={{ color: 'var(--accent-strong)', fontStyle: 'italic' }}>Kai</em> — a backend
           engineer based in Hanoi, learning frontend one page at a time. I write about clean APIs in the
           morning and share life&rsquo;s quiet moments in the afternoon. New letters land roughly once a fortnight.
         </motion.p>
@@ -62,7 +62,7 @@ export default function HeroSection() {
             className="group inline-flex items-center gap-2 pl-6 pr-2 rounded-full font-medium text-[14px] transition-transform hover:-translate-y-0.5"
             style={{ background: 'var(--ink)', color: 'var(--paper)', height: 52 }}
           >
-            Read my articles
+            Read my letters
             <span
               className="grid place-items-center w-10 h-10 rounded-full transition-transform group-hover:translate-x-0.5"
               style={{ background: 'var(--accent)', color: 'var(--ink)' }}
