@@ -22,3 +22,4 @@ Mục đích: giới thiệu bản thân, show skills, chia sẻ ảnh và cuộ
 - Frontend: component nhỏ, tái sử dụng được
 - API: RESTful, có error handling rõ ràng
 - Không hardcode credentials
+- Component phải reusable và tối ưu performance (ví dụ: dùng Canvas `createImageBitmap` thay vì `HTMLImageElement` cho scroll animation lớn)

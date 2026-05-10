@@ -742,7 +742,15 @@ Triết lý: consistent với brand, không fancy. Gray là primary, cyan chỉ 
 
 ---
 
-## Trạng thái hiện tại (2026-05-08)
+## Trạng thái hiện tại (2026-05-11)
+
+### Handoff Implementation - Scroll Canvas Animation
+- Đã implement thành công `ThemeScrollCanvas` component (dùng HTML5 Canvas, sync Framer Motion `useScroll`).
+- Tối ưu hóa performance canvas: dùng `createImageBitmap` decode ảnh qua GPU (off-thread) thay vì main thread, tránh tình trạng giật frame (stuttering) và flash ảnh cũ khi cuộn nhanh.
+- Đã update giao diện trang chủ, cập nhật Hero Section, Layout, Typography dựa trên bản handoff thiết kế mới mà vẫn giữ nguyên Golang API backend logic.
+- Xử lý mượt mà theme switching (Light/Dark mode) cùng với preload WebP image sequences (`public/frames/light/` và `public/frames/dark/`).
+
+### Trạng thái hiện tại (2026-05-08)
 
 ### Vercel Frontend Build — ĐÃ FIX
 
