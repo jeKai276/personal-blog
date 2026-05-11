@@ -10,10 +10,10 @@ import BlogCard from '@/components/blog/BlogCard'
 import AlbumCard from '@/components/photo/AlbumCard'
 
 export const metadata: Metadata = {
-  title: 'Yen | Work fast. Live slow.',
+  title: 'JK | Work fast. Live slow.',
   description: 'Backend developer đang học frontend — viết về code, chia sẻ ảnh và cuộc sống.',
   openGraph: {
-    title: 'Yen | Work fast. Live slow.',
+    title: 'JK | Work fast. Live slow.',
     description: 'Backend developer đang học frontend — viết về code, chia sẻ ảnh và cuộc sống.',
   },
 }

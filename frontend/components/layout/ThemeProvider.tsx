@@ -18,13 +18,12 @@ export function useTheme() {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light')
+  const [theme, setTheme] = useState<Theme>('dark')
 
   useEffect(() => {
-    // Read from localStorage or system preference
+    // Read from localStorage or default to dark
     const stored = localStorage.getItem('theme') as Theme | null
-    const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-    const initial = stored ?? preferred
+    const initial = stored ?? 'dark'
     setTheme(initial)
     if (initial === 'dark') {
       document.documentElement.classList.add('dark')

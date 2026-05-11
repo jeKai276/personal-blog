@@ -3,12 +3,12 @@ import './globals.css'
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
-  title: { default: 'Yen | Personal Blog', template: '%s | Yen' },
+  title: { default: 'JK | Personal Blog', template: '%s | JK' },
   description: 'Backend developer đang học frontend — viết về code, chia sẻ ảnh và cuộc sống.',
   openGraph: {
     type: 'website',
     locale: 'vi_VN',
-    siteName: 'Yen Blog',
+    siteName: 'JK Blog',
   },
 }
 
