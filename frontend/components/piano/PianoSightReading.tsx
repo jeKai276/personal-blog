@@ -88,10 +88,10 @@ function drawOneStaff(
   }
 
   // Clef symbol
-  // Treble: baseline at bottom staff line so G-ring lands on G4 (2nd from bottom).
-  // Bass:   baseline raised so F-line aligns with F3 (2nd from top).
   ctx.fillStyle = colors.text
   ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic' // Prevent state leak from showHint
+
   if (clef === 'treble') {
     ctx.font = `${lineGap * 11}px serif`
     ctx.fillText('𝄞', staffPad - 10, midY + lineGap * 4)
@@ -110,11 +110,12 @@ function drawOneStaff(
   ctx.strokeStyle = colors.extra
   ctx.lineWidth   = 1.5
   const ledgerW   = noteR * 2.6
-  for (let p = 5; p <= note.staffPosition; p += 2) {
+  // Ledger lines are drawn at even positions >= 6 or <= -6
+  for (let p = 6; p <= note.staffPosition; p += 2) {
     const ly = midY - p * lineGap
     ctx.beginPath(); ctx.moveTo(noteX - ledgerW, ly); ctx.lineTo(noteX + ledgerW, ly); ctx.stroke()
   }
-  for (let p = -5; p >= note.staffPosition; p -= 2) {
+  for (let p = -6; p >= note.staffPosition; p -= 2) {
     const ly = midY - p * lineGap
     ctx.beginPath(); ctx.moveTo(noteX - ledgerW, ly); ctx.lineTo(noteX + ledgerW, ly); ctx.stroke()
   }
@@ -169,9 +170,8 @@ function drawStaff(
 
   if (clef === 'both') {
     // 12 lineGaps between the two midY points ensures Middle C overlaps exactly.
-    // Top line = midY_treble - 4*lineGap. Bottom line = midY_bass + 4*lineGap.
-    // Total vertical span = 20 * lineGap. Adding padding = ~24 lineGaps.
-    const lineGap = Math.min(height / 24, 18)
+    // Calculate lineGap so that the highest note (C6) and lowest note (E2) fit inside canvas.
+    const lineGap = Math.min(height / 32, 12)
     const midY_treble = height / 2 - 6 * lineGap
     const midY_bass   = height / 2 + 6 * lineGap
 
