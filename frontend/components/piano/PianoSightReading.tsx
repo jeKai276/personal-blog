@@ -69,6 +69,7 @@ function drawStaff(
   note: NoteInfo | null,
   feedback: 'correct' | 'wrong' | 'idle',
   isDark: boolean,
+  showHint: boolean,
 ) {
   ctx.clearRect(0, 0, width, height)
 
@@ -95,16 +96,19 @@ function drawStaff(
     ctx.stroke()
   }
 
-  // ── Clef symbol (drawn as text using Unicode music symbols) ──────────
+  // ── Clef symbol ───────────────────────────────────────────────────────
+  // Treble: baseline at bottom staff line (E4). The G-ring of 𝄞 naturally
+  // sits 2 lineGaps above baseline → lands on G4 line (2nd from bottom).
+  // Bass: baseline adjusted so F-line of 𝄢 aligns with the F3 staff line
+  // (2nd from top = middleLine - 2*lineGap).
   ctx.fillStyle = textColor
+  ctx.textAlign = 'left'
   if (clef === 'treble') {
-    // 𝄞 treble clef
-    ctx.font = `${lineGap * 10}px serif`
-    ctx.fillText('𝄞', staffPad - 8, middleLine + lineGap * 5.5)
+    ctx.font = `${lineGap * 11}px serif`
+    ctx.fillText('𝄞', staffPad - 10, middleLine + lineGap * 4)
   } else {
-    // 𝄢 bass clef
-    ctx.font = `${lineGap * 5.5}px serif`
-    ctx.fillText('𝄢', staffPad - 4, middleLine + lineGap * 1.2)
+    ctx.font = `${lineGap * 5}px serif`
+    ctx.fillText('𝄢', staffPad - 2, middleLine - lineGap * 0.5)
   }
 
   if (!note) return
@@ -158,11 +162,13 @@ function drawStaff(
   ctx.lineTo(stemX, stemEnd)
   ctx.stroke()
 
-  // ── Note name label (small, below the canvas area) ───────────────────
-  ctx.fillStyle  = textColor
-  ctx.font       = `500 ${lineGap * 1.1}px 'Geist', sans-serif`
-  ctx.textAlign  = 'center'
-  ctx.fillText(note.name, noteX, height - 6)
+  // ── Note name label — only when hint is shown ───────────────────────
+  if (showHint) {
+    ctx.fillStyle  = textColor
+    ctx.font       = `500 ${lineGap * 1.1}px 'Geist', sans-serif`
+    ctx.textAlign  = 'center'
+    ctx.fillText(note.name, noteX, height - 6)
+  }
 }
 
 // ─── Web Audio Synth ──────────────────────────────────────────────────────
@@ -322,14 +328,15 @@ export default function PianoSightReading() {
   const midiAccessRef = useRef<MIDIAccess | null>(null)
   const rafRef        = useRef<number>(0)
 
-  const [clef, setClef]             = useState<Clef>('treble')
+  const [clef, setClef]               = useState<Clef>('treble')
   const [currentNote, setCurrentNote] = useState<NoteInfo | null>(null)
-  const [feedback, setFeedback]     = useState<'correct' | 'wrong' | 'idle'>('idle')
-  const [midiStatus, setMidiStatus] = useState<'disconnected' | 'connected' | 'error' | 'unsupported'>('disconnected')
-  const [score, setScore]           = useState({ correct: 0, wrong: 0 })
-  const [isDark, setIsDark]         = useState(false)
+  const [feedback, setFeedback]       = useState<'correct' | 'wrong' | 'idle'>('idle')
+  const [midiStatus, setMidiStatus]   = useState<'disconnected' | 'connected' | 'error' | 'unsupported'>('disconnected')
+  const [score, setScore]             = useState({ correct: 0, wrong: 0 })
+  const [isDark, setIsDark]           = useState(false)
   const [activeFlash, setActiveFlash] = useState<{ midi: number; color: string } | null>(null)
-  const [streak, setStreak]         = useState(0)
+  const [streak, setStreak]           = useState(0)
+  const [showHint, setShowHint]       = useState(false)
 
   const midiConnected = midiStatus === 'connected'
 
@@ -342,12 +349,13 @@ export default function PianoSightReading() {
     return () => obs.disconnect()
   }, [])
 
-  // Pick random note
+  // Pick random note — also resets hint
   const pickNote = useCallback((nextClef?: Clef) => {
     const pool  = (nextClef ?? clef) === 'treble' ? TREBLE_NOTES : BASS_NOTES
     const note  = pool[Math.floor(Math.random() * pool.length)]
     setCurrentNote(note)
     setFeedback('idle')
+    setShowHint(false)
   }, [clef])
 
   // Init game
@@ -426,7 +434,7 @@ export default function PianoSightReading() {
         canvas.height = h * dpr
         ctx.scale(dpr, dpr)
       }
-      drawStaff(ctx, w, h, clef, currentNote, feedback, isDark)
+      drawStaff(ctx, w, h, clef, currentNote, feedback, isDark, showHint)
       rafRef.current = requestAnimationFrame(loop)
     }
     loop()
@@ -434,7 +442,8 @@ export default function PianoSightReading() {
       running = false
       cancelAnimationFrame(rafRef.current)
     }
-  }, [clef, currentNote, feedback, isDark])
+  }, [clef, currentNote, feedback, isDark, showHint])
+
 
   // ── Web MIDI ──────────────────────────────────────────────────────────
   const connectMidi = useCallback(async () => {
@@ -666,8 +675,9 @@ export default function PianoSightReading() {
           )}
         </div>
 
-        {/* ── Skip / Next ───────────────────────────────────────────────── */}
-        <div className="flex justify-center mb-8">
+        {/* ── Actions row: Skip + Hint ──────────────────────────────────── */}
+        <div className="flex justify-center gap-3 mb-8">
+          {/* Skip */}
           <button
             onClick={() => pickNote()}
             className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all hover:opacity-80"
@@ -676,9 +686,28 @@ export default function PianoSightReading() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M5 12h14M13 6l6 6-6 6" />
             </svg>
-            Skip note
+            Skip
+          </button>
+
+          {/* Hint — reveals note name on staff + highlights keyboard key */}
+          <button
+            onClick={() => setShowHint(h => !h)}
+            className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all"
+            style={{
+              background: showHint ? 'oklch(0.55 0.18 280)' : 'var(--paper-2)',
+              border: showHint ? '1px solid oklch(0.55 0.18 280)' : '1px solid var(--line)',
+              color: showHint ? '#fff' : 'var(--ink-2)',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            {showHint ? 'Hide hint' : 'Hint'}
           </button>
         </div>
+
 
         {/* ── Virtual Keyboard ─────────────────────────────────────────── */}
         <div
@@ -691,7 +720,7 @@ export default function PianoSightReading() {
           <VirtualKeyboard
             startOctave={kbStart}
             endOctave={kbEnd}
-            highlightMidi={currentNote?.midi ?? null}
+            highlightMidi={showHint ? (currentNote?.midi ?? null) : null}
             activeFlash={activeFlash}
             onNotePlay={handleNoteInput}
             midiConnected={midiConnected}
