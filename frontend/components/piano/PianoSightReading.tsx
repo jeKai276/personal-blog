@@ -128,11 +128,18 @@ function drawOneStaff(
   ctx.fill()
 
   // Stem
-  const stemDir   = note.staffPosition >= 0 ? -1 : 1
-  const stemX     = stemDir === -1 ? noteX - noteR + 1 : noteX + noteR - 1
+  // Rule: On or above middle line (staffPosition >= 0) -> Stem DOWN (+Y), LEFT side.
+  // Rule: Below middle line (staffPosition < 0) -> Stem UP (-Y), RIGHT side.
+  const isDownStem = note.staffPosition >= 0
+  const stemDir    = isDownStem ? 1 : -1
+  const stemX      = isDownStem ? noteX - noteR + 1 : noteX + noteR - 1
+  
+  // Stem length: 1 octave. (3.5 line spacings = 3.5 * 2 * lineGap = 7 * lineGap)
+  const stemLength = 7 * lineGap
+
   ctx.beginPath()
   ctx.moveTo(stemX, noteY + stemDir * noteR * 0.5)
-  ctx.lineTo(stemX, noteY + stemDir * lineGap * 6)
+  ctx.lineTo(stemX, noteY + stemDir * stemLength)
   ctx.stroke()
 
   // Note name hint
