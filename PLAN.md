@@ -1,4 +1,4 @@
-﻿# Personal Blog — Project Plan
+# Personal Blog — Project Plan
 
 ## Mô tả
 
@@ -835,3 +835,63 @@ SERVER_PORT=8080
 COOKIE_SECURE=false         # "true" trong production (HTTPS)
 ALLOWED_ORIGINS=http://localhost:3000  # comma-separated trong production
 ```
+
+---
+
+## Phase 7 — Piano Sight Reading Module ✅ DONE (2026-06-22)
+
+### Mục tiêu
+
+Tích hợp ứng dụng luyện đọc nốt nhạc nhanh (sight reading) vào blog như một trang standalone `/piano`.
+Không cần backend mới — toàn bộ là client-side Vanilla JS.
+
+### Quyết định kỹ thuật
+
+| # | Vấn đề | Quyết định | Lý do |
+|---|---|---|---|
+| 1 | Vẽ khuông nhạc | Canvas 2D tự vẽ | Không cần VexFlow, nhẹ hơn, responsive |
+| 2 | Framework | React `'use client'` + `dynamic({ ssr: false })` | Web MIDI/Audio API không có trên server |
+| 3 | Âm thanh | Web Audio API (Oscillator triangle wave) | Zero-latency, no network, đủ nhận diện nốt |
+| 4 | Mute logic | `midiConnected` flag → skip `playNote()` | Đàn thật tự phát tiếng, tránh echo |
+| 5 | Staff rendering | `requestAnimationFrame` loop | Smooth 60fps re-draw khi note/feedback thay đổi |
+| 6 | Theme | `MutationObserver` trên `<html>.classList` | Tích hợp ThemeProvider hiện có |
+| 7 | Virtual keyboard | SVG inline | Responsive, không cần resize listener |
+
+### Files tạo mới
+
+| File | Mô tả |
+|---|---|
+| `frontend/app/(public)/piano/page.tsx` | Route `/piano` — server metadata + dynamic import |
+| `frontend/components/piano/PianoSightReading.tsx` | Toàn bộ game logic (Canvas, MIDI, Audio, UI) |
+
+### Files sửa
+
+| File | Thay đổi |
+|---|---|
+| `frontend/components/layout/Navbar.tsx` | Thêm `{ href: '/piano', label: 'Piano' }` vào NAV_LINKS |
+| `CLAUDE.md` | Thêm section Module: Piano Sight Reading |
+
+### Tính năng đã implement
+
+- [x] Canvas 2D staff — 5 dòng kẻ, khóa Sol/Fa (Unicode 𝄞 𝄢), ledger lines tự động
+- [x] Nốt ngẫu nhiên: Treble C4–C6 (15 nốt), Bass E2–E4 (15 nốt)
+- [x] Note head ellipse nghiêng + stem (hướng tự động theo vị trí)
+- [x] Clef toggle (Treble / Bass) — reset note pool khi switch
+- [x] Web MIDI: "Connect Piano" button, lắng nghe NoteOn, auto-reattach khi device thay đổi
+- [x] Web Audio: Oscillator triangle, ADSR envelope (attack 10ms, decay ~1.8s)
+- [x] Mute Web Audio khi MIDI connected
+- [x] Virtual keyboard SVG: highlight target (blue), flash đúng/sai
+- [x] PC keyboard: A–K = C4–C5, W/E/T/Y/U = black keys
+- [x] Feedback: xanh = correct (auto next sau 600ms), đỏ = wrong (giữ nốt)
+- [x] Scoreboard: Correct / Wrong / Accuracy% / Streak 🔥 (khi ≥3)
+- [x] "Skip note" button
+- [x] Dark/light theme aware
+- [x] SEO metadata + OpenGraph
+- [x] Responsive mobile
+
+### TODO tương lai
+
+- [ ] Chế độ có dấu thăng/giáng (accidentals)
+- [ ] Soundfont nhẹ (WebAssembly) thay Oscillator
+- [ ] Session history (localStorage)
+- [ ] BPM drill mode

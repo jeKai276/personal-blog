@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: '/about', label: 'Soul' },
   { href: '/blog', label: 'Letter' },
   { href: '/photos', label: 'Moment' },
+  { href: '/piano', label: 'Piano' },
 ]
 
 function Logo() {

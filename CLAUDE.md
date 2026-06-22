@@ -16,6 +16,7 @@ Mục đích: giới thiệu bản thân, show skills, chia sẻ ảnh và cuộ
 - Blog: viết bài, chia sẻ hàng ngày
 - Photo gallery: upload và xem ảnh đi chơi
 - Admin: chỉ mình tôi có thể đăng bài và upload ảnh
+- **Piano Sight Reading** (`/piano`): ứng dụng luyện đọc nốt nhạc tích hợp (xem bên dưới)
 
 ## Quy tắc
 - Backend Go: follow standard project layout
@@ -23,3 +24,31 @@ Mục đích: giới thiệu bản thân, show skills, chia sẻ ảnh và cuộ
 - API: RESTful, có error handling rõ ràng
 - Không hardcode credentials
 - Component phải reusable và tối ưu performance (ví dụ: dùng Canvas `createImageBitmap` thay vì `HTMLImageElement` cho scroll animation lớn)
+
+## Module: Piano Sight Reading (2026-06-22)
+
+### Mô tả
+Ứng dụng luyện đọc nốt nhạc nhanh (sight reading). Tích hợp như một trang mới trong blog.
+
+### Files
+- `frontend/app/(public)/piano/page.tsx` — route `/piano`, server metadata + dynamic import
+- `frontend/components/piano/PianoSightReading.tsx` — toàn bộ logic client-side
+
+### Tech
+- Vanilla JS (trong React client component)
+- Canvas 2D để vẽ khuông nhạc (không dùng thư viện ngoài)
+- Web MIDI API — kết nối đàn piano vật lý (Bluefy/iPad)
+- Web Audio API (Oscillator triangle wave) — phát âm thanh khi không có MIDI
+- requestAnimationFrame để render staff mượt
+
+### Tính năng
+- Khóa Sol (Treble) + Khóa Fa (Bass), chuyển qua toggle button
+- Nốt ngẫu nhiên hiển thị trên khuông nhạc với dấu gạch thêm (ledger lines)
+- Bàn phím ảo SVG (click) + bàn phím PC (phím A–K = C4–B4)
+- MIDI: nút "Connect Piano", lắng nghe NoteOn events
+- Mute Web Audio khi MIDI đã kết nối
+- Feedback: xanh lá = đúng (auto next), đỏ = sai (giữ nốt)
+- Điểm số: Correct / Wrong / Accuracy % / Streak 🔥
+- Theme: tự detect dark/light mode từ class `dark` trên `<html>`
+- Navbar: đã thêm link "Piano" vào NAV_LINKS
+
