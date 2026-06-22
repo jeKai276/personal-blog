@@ -168,8 +168,40 @@ function drawStaff(
   const idleNote = isDark ? '#ebe5f4' : '#1f1a26'
 
   if (clef === 'both') {
-    const halfH   = height / 2
-    const lineGap = Math.min(halfH / 14, 18)
+    // 12 lineGaps between the two midY points ensures Middle C overlaps exactly.
+    // Top line = midY_treble - 4*lineGap. Bottom line = midY_bass + 4*lineGap.
+    // Total vertical span = 20 * lineGap. Adding padding = ~24 lineGaps.
+    const lineGap = Math.min(height / 24, 18)
+    const midY_treble = height / 2 - 6 * lineGap
+    const midY_bass   = height / 2 + 6 * lineGap
+
+    // Draw Brace and System Barline
+    const staffPad = 40
+    const yTop = midY_treble - 4 * lineGap
+    const yBot = midY_bass + 4 * lineGap
+
+    ctx.strokeStyle = baseNote.line
+    ctx.lineWidth   = 1.5
+    
+    // System barline
+    ctx.beginPath()
+    ctx.moveTo(staffPad, yTop)
+    ctx.lineTo(staffPad, yBot)
+    ctx.stroke()
+
+    // Brace (curly bracket)
+    const braceX = staffPad - 28
+    const w = 8
+    const yMid = height / 2
+    ctx.beginPath()
+    ctx.moveTo(braceX + w, yTop)
+    ctx.bezierCurveTo(braceX, yTop, braceX, yTop, braceX, yTop + w)
+    ctx.lineTo(braceX, yMid - w)
+    ctx.bezierCurveTo(braceX, yMid, braceX - w, yMid, braceX - w, yMid)
+    ctx.bezierCurveTo(braceX, yMid, braceX, yMid, braceX, yMid + w)
+    ctx.lineTo(braceX, yBot - w)
+    ctx.bezierCurveTo(braceX, yBot, braceX, yBot, braceX + w, yBot)
+    ctx.stroke()
 
     // Treble (top half)
     const trebleColors: StaffColors = {
@@ -181,18 +213,8 @@ function drawStaff(
       noteClef === 'treble' ? note : null,
       trebleColors,
       showHint && noteClef === 'treble',
-      halfH * 0.5, lineGap,
+      midY_treble, lineGap,
     )
-
-    // Dashed separator between the two staves
-    ctx.strokeStyle = isDark ? 'rgba(235,229,244,0.12)' : 'rgba(31,26,38,0.1)'
-    ctx.lineWidth   = 1
-    ctx.setLineDash([5, 5])
-    ctx.beginPath()
-    ctx.moveTo(30, halfH)
-    ctx.lineTo(width - 30, halfH)
-    ctx.stroke()
-    ctx.setLineDash([])
 
     // Bass (bottom half)
     const bassColors: StaffColors = {
@@ -204,7 +226,7 @@ function drawStaff(
       noteClef === 'bass' ? note : null,
       bassColors,
       showHint && noteClef === 'bass',
-      halfH * 1.5, lineGap,
+      midY_bass, lineGap,
     )
   } else {
     const lineGap = Math.min(height / 14, 22)
