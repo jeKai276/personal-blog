@@ -450,6 +450,7 @@ export default function PianoSightReading() {
       function attachListeners(access: MIDIAccess) {
         access.inputs.forEach(input => {
           input.onmidimessage = (e: MIDIMessageEvent) => {
+            if (!e.data) return
             const [status, note, velocity] = Array.from(e.data)
             const cmd = status & 0xf0
             // Note On with velocity > 0
@@ -477,6 +478,7 @@ export default function PianoSightReading() {
     if (!midiAccessRef.current) return
     midiAccessRef.current.inputs.forEach(input => {
       input.onmidimessage = (e: MIDIMessageEvent) => {
+        if (!e.data) return
         const [status, note, velocity] = Array.from(e.data)
         const cmd = status & 0xf0
         if ((cmd === 0x90 && velocity > 0) && note !== undefined) {
