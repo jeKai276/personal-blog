@@ -500,41 +500,106 @@ export default function PianoSightReading() {
   }, [clef, currentNote, feedback, isDark, showHint, noteClef])
 
 
-  // ── Web MIDI ──────────────────────────────────────────────────────────
+  // ── Web MIDI & Web Bluetooth (BLE MIDI) ────────────────────────────────
   const connectMidi = useCallback(async () => {
-    if (!navigator.requestMIDIAccess) {
-      setMidiStatus('unsupported')
-      return
-    }
-    try {
-      const access = await navigator.requestMIDIAccess({ sysex: false })
-      midiAccessRef.current = access
-      setMidiStatus('connected')
+    // 1. Try standard Web MIDI (Chrome, Edge, Android, etc.)
+    if (navigator.requestMIDIAccess) {
+      try {
+        const access = await navigator.requestMIDIAccess({ sysex: false })
+        midiAccessRef.current = access
+        setMidiStatus('connected')
 
-      function attachListeners(access: MIDIAccess) {
-        access.inputs.forEach(input => {
-          input.onmidimessage = (e: MIDIMessageEvent) => {
-            if (!e.data) return
-            const [status, note, velocity] = Array.from(e.data)
-            const cmd = status & 0xf0
-            // Note On with velocity > 0
-            if ((cmd === 0x90 && velocity > 0) && note !== undefined) {
-              handleNoteInput(note)
+        function attachListeners(acc: MIDIAccess) {
+          acc.inputs.forEach(input => {
+            input.onmidimessage = (e: MIDIMessageEvent) => {
+              if (!e.data) return
+              const [status, note, velocity] = Array.from(e.data)
+              const cmd = status & 0xf0
+              if ((cmd === 0x90 && velocity > 0) && note !== undefined) {
+                handleNoteInput(note)
+              }
+            }
+          })
+        }
+
+        attachListeners(access)
+
+        access.onstatechange = () => {
+          const hasInput = access.inputs.size > 0
+          setMidiStatus(hasInput ? 'connected' : 'disconnected')
+          attachListeners(access)
+        }
+        return
+      } catch {
+        // Fallthrough to BLE MIDI if standard Web MIDI is blocked or fails
+      }
+    }
+
+    // 2. Fallback to Web Bluetooth (for Bluefy / iOS)
+    const nav = navigator as any
+    if (nav.bluetooth && nav.bluetooth.requestDevice) {
+      try {
+        const device = await nav.bluetooth.requestDevice({
+          filters: [{ services: ['03b80e5a-ede8-4b33-a751-6ce34ec4c700'] }]
+        })
+        const server = await device.gatt?.connect()
+        if (!server) throw new Error("GATT connection failed")
+        
+        const service = await server.getPrimaryService('03b80e5a-ede8-4b33-a751-6ce34ec4c700')
+        const characteristic = await service.getCharacteristic('7772e5db-3868-4112-a1a9-f2669d106bf3')
+        
+        await characteristic.startNotifications()
+        setMidiStatus('connected')
+        
+        let runningStatus = 0
+        
+        characteristic.addEventListener('characteristicvaluechanged', (e: any) => {
+          const data = new Uint8Array(e.target.value.buffer)
+          if (data.length < 3) return
+          
+          let i = 1 // skip header (data[0])
+          while (i < data.length) {
+            const b = data[i]
+            if (b >= 0x80) { 
+              // Timestamp or Status
+              if (i + 1 < data.length && data[i + 1] >= 0x80) {
+                // b is timestamp, next is status
+                runningStatus = data[i + 1]
+                i += 2
+              } else {
+                // b is timestamp, next is data
+                i += 1
+              }
+            } else { 
+              // Data byte
+              const cmd = runningStatus & 0xf0
+              if (cmd === 0x90 || cmd === 0x80) {
+                const note = data[i]
+                const vel = data[i + 1] !== undefined ? data[i + 1] : 0
+                if (cmd === 0x90 && vel > 0) {
+                  handleNoteInput(note)
+                }
+                i += 2
+              } else {
+                i += 1 // unknown data length, skip 1 and hope for sync
+              }
             }
           }
         })
+        
+        device.addEventListener('gattserverdisconnected', () => {
+          setMidiStatus('disconnected')
+        })
+        return
+      } catch (err) {
+        console.error('BLE MIDI Error', err)
+        setMidiStatus('error')
+        return
       }
-
-      attachListeners(access)
-
-      access.onstatechange = () => {
-        const hasInput = access.inputs.size > 0
-        setMidiStatus(hasInput ? 'connected' : 'disconnected')
-        attachListeners(access)
-      }
-    } catch {
-      setMidiStatus('error')
     }
+
+    // 3. Neither supported
+    setMidiStatus('unsupported')
   }, [handleNoteInput])
 
   // Re-attach MIDI listeners when handleNoteInput changes
