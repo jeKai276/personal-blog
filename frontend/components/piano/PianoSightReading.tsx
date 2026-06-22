@@ -97,7 +97,7 @@ function drawOneStaff(
     ctx.fillText('𝄞', staffPad - 10, midY + lineGap * 4)
   } else {
     ctx.font = `${lineGap * 5}px serif`
-    ctx.fillText('𝄢', staffPad - 2, midY + lineGap * 1.5)
+    ctx.fillText('𝄢', staffPad - 2, midY + lineGap * 0.5)
   }
 
   if (!note) return
