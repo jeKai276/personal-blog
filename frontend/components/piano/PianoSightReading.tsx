@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 
 // ─── Music Theory Data ─────────────────────────────────────────────────────
 
-type Clef = 'treble' | 'bass'
+type Clef = 'treble' | 'bass' | 'both'
 
 interface NoteInfo {
   midi: number       // MIDI note number (0–127)
@@ -61,6 +61,88 @@ const BASS_NOTES: NoteInfo[] = [
 
 // ─── Canvas Staff Drawing ─────────────────────────────────────────────────
 
+interface StaffColors { line: string; note: string; text: string; extra: string }
+
+/** Draws a single staff section centred at `midY` using the given `lineGap`. */
+function drawOneStaff(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  clef: 'treble' | 'bass',
+  note: NoteInfo | null,
+  colors: StaffColors,
+  showHint: boolean,
+  midY: number,
+  lineGap: number,
+) {
+  const staffPad = 40
+
+  // 5 staff lines
+  ctx.strokeStyle = colors.line
+  ctx.lineWidth   = 1.5
+  for (let i = -2; i <= 2; i++) {
+    const y = midY + i * lineGap * 2
+    ctx.beginPath()
+    ctx.moveTo(staffPad, y)
+    ctx.lineTo(width - staffPad, y)
+    ctx.stroke()
+  }
+
+  // Clef symbol
+  // Treble: baseline at bottom staff line so G-ring lands on G4 (2nd from bottom).
+  // Bass:   baseline raised so F-line aligns with F3 (2nd from top).
+  ctx.fillStyle = colors.text
+  ctx.textAlign = 'left'
+  if (clef === 'treble') {
+    ctx.font = `${lineGap * 11}px serif`
+    ctx.fillText('𝄞', staffPad - 10, midY + lineGap * 4)
+  } else {
+    ctx.font = `${lineGap * 5}px serif`
+    ctx.fillText('𝄢', staffPad - 2, midY - lineGap * 0.5)
+  }
+
+  if (!note) return
+
+  const noteX = width / 2 + 30
+  const noteY = midY - note.staffPosition * lineGap
+  const noteR = lineGap * 0.85
+
+  // Ledger lines
+  ctx.strokeStyle = colors.extra
+  ctx.lineWidth   = 1.5
+  const ledgerW   = noteR * 2.6
+  for (let p = 5; p <= note.staffPosition; p += 2) {
+    const ly = midY - p * lineGap
+    ctx.beginPath(); ctx.moveTo(noteX - ledgerW, ly); ctx.lineTo(noteX + ledgerW, ly); ctx.stroke()
+  }
+  for (let p = -5; p >= note.staffPosition; p -= 2) {
+    const ly = midY - p * lineGap
+    ctx.beginPath(); ctx.moveTo(noteX - ledgerW, ly); ctx.lineTo(noteX + ledgerW, ly); ctx.stroke()
+  }
+
+  // Note head
+  ctx.fillStyle = ctx.strokeStyle = colors.note
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.ellipse(noteX, noteY, noteR, noteR * 0.75, -0.3, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Stem
+  const stemDir   = note.staffPosition >= 0 ? -1 : 1
+  const stemX     = stemDir === -1 ? noteX - noteR + 1 : noteX + noteR - 1
+  ctx.beginPath()
+  ctx.moveTo(stemX, noteY + stemDir * noteR * 0.5)
+  ctx.lineTo(stemX, noteY + stemDir * lineGap * 6)
+  ctx.stroke()
+
+  // Note name hint
+  if (showHint) {
+    ctx.fillStyle = colors.text
+    ctx.font      = `500 ${lineGap * 1.1}px 'Geist', sans-serif`
+    ctx.textAlign = 'center'
+    ctx.fillText(note.name, noteX, midY + lineGap * 5.5)
+  }
+}
+
 function drawStaff(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -70,106 +152,66 @@ function drawStaff(
   feedback: 'correct' | 'wrong' | 'idle',
   isDark: boolean,
   showHint: boolean,
+  noteClef: 'treble' | 'bass' = 'treble',
 ) {
   ctx.clearRect(0, 0, width, height)
 
-  const lineColor  = isDark ? 'rgba(235,229,244,0.5)' : 'rgba(31,26,38,0.4)'
-  const noteColor  = feedback === 'correct' ? '#22c55e'
-                   : feedback === 'wrong'   ? '#ef4444'
-                   : isDark                 ? '#ebe5f4'
-                                            : '#1f1a26'
-  const textColor  = isDark ? '#ebe5f4' : '#1f1a26'
-  const extraColor = isDark ? 'rgba(235,229,244,0.7)' : 'rgba(31,26,38,0.6)'
-
-  const staffPad   = 40
-  const lineGap    = Math.min(height / 14, 22) // space between lines
-  const middleLine = height / 2                // vertical center
-
-  // 5 staff lines: positions -2, -1, 0, 1, 2 (above/below middle)
-  ctx.strokeStyle = lineColor
-  ctx.lineWidth   = 1.5
-  for (let i = -2; i <= 2; i++) {
-    const y = middleLine + i * lineGap * 2 // lines are spaced 2 units apart (lines + spaces)
-    ctx.beginPath()
-    ctx.moveTo(staffPad, y)
-    ctx.lineTo(width - staffPad, y)
-    ctx.stroke()
+  const baseNote: StaffColors = {
+    line:  isDark ? 'rgba(235,229,244,0.5)' : 'rgba(31,26,38,0.4)',
+    note:  feedback === 'correct' ? '#22c55e'
+         : feedback === 'wrong'   ? '#ef4444'
+         : isDark                 ? '#ebe5f4' : '#1f1a26',
+    text:  isDark ? '#ebe5f4' : '#1f1a26',
+    extra: isDark ? 'rgba(235,229,244,0.7)' : 'rgba(31,26,38,0.6)',
   }
+  // Idle color for the inactive staff in "both" mode
+  const idleNote = isDark ? '#ebe5f4' : '#1f1a26'
 
-  // ── Clef symbol ───────────────────────────────────────────────────────
-  // Treble: baseline at bottom staff line (E4). The G-ring of 𝄞 naturally
-  // sits 2 lineGaps above baseline → lands on G4 line (2nd from bottom).
-  // Bass: baseline adjusted so F-line of 𝄢 aligns with the F3 staff line
-  // (2nd from top = middleLine - 2*lineGap).
-  ctx.fillStyle = textColor
-  ctx.textAlign = 'left'
-  if (clef === 'treble') {
-    ctx.font = `${lineGap * 11}px serif`
-    ctx.fillText('𝄞', staffPad - 10, middleLine + lineGap * 4)
+  if (clef === 'both') {
+    const halfH   = height / 2
+    const lineGap = Math.min(halfH / 14, 18)
+
+    // Treble (top half)
+    const trebleColors: StaffColors = {
+      ...baseNote,
+      note: noteClef === 'treble' ? baseNote.note : idleNote,
+    }
+    drawOneStaff(
+      ctx, width, 'treble',
+      noteClef === 'treble' ? note : null,
+      trebleColors,
+      showHint && noteClef === 'treble',
+      halfH * 0.5, lineGap,
+    )
+
+    // Dashed separator between the two staves
+    ctx.strokeStyle = isDark ? 'rgba(235,229,244,0.12)' : 'rgba(31,26,38,0.1)'
+    ctx.lineWidth   = 1
+    ctx.setLineDash([5, 5])
+    ctx.beginPath()
+    ctx.moveTo(30, halfH)
+    ctx.lineTo(width - 30, halfH)
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    // Bass (bottom half)
+    const bassColors: StaffColors = {
+      ...baseNote,
+      note: noteClef === 'bass' ? baseNote.note : idleNote,
+    }
+    drawOneStaff(
+      ctx, width, 'bass',
+      noteClef === 'bass' ? note : null,
+      bassColors,
+      showHint && noteClef === 'bass',
+      halfH * 1.5, lineGap,
+    )
   } else {
-    ctx.font = `${lineGap * 5}px serif`
-    ctx.fillText('𝄢', staffPad - 2, middleLine - lineGap * 0.5)
-  }
-
-  if (!note) return
-
-  // ── Map staffPosition to Y coordinate ────────────────────────────────
-  // staffPosition 0 = middle line (y = middleLine)
-  // Each step = lineGap (half the space between staff lines)
-  const noteX = width / 2 + 30
-  const noteY = middleLine - note.staffPosition * lineGap
-  const noteR = lineGap * 0.85
-
-  // ── Ledger lines ──────────────────────────────────────────────────────
-  // Draw ledger lines for notes outside the staff (staffPosition > 4 or < -4)
-  ctx.strokeStyle = extraColor
-  ctx.lineWidth   = 1.5
-  const ledgerW   = noteR * 2.6
-
-  // Above staff (positions 5, 6, 7, 8...)
-  for (let p = 5; p <= note.staffPosition; p += 2) {
-    const ly = middleLine - p * lineGap
-    ctx.beginPath()
-    ctx.moveTo(noteX - ledgerW, ly)
-    ctx.lineTo(noteX + ledgerW, ly)
-    ctx.stroke()
-  }
-  // Below staff (positions -5, -6, -7...)
-  for (let p = -5; p >= note.staffPosition; p -= 2) {
-    const ly = middleLine - p * lineGap
-    ctx.beginPath()
-    ctx.moveTo(noteX - ledgerW, ly)
-    ctx.lineTo(noteX + ledgerW, ly)
-    ctx.stroke()
-  }
-
-  // ── Note head ─────────────────────────────────────────────────────────
-  ctx.fillStyle   = noteColor
-  ctx.strokeStyle = noteColor
-  ctx.lineWidth   = 1.5
-  ctx.beginPath()
-  ctx.ellipse(noteX, noteY, noteR, noteR * 0.75, -0.3, 0, Math.PI * 2)
-  ctx.fill()
-
-  // ── Stem ─────────────────────────────────────────────────────────────
-  const stemDir   = note.staffPosition >= 0 ? -1 : 1  // down if on/above middle
-  const stemX     = stemDir === -1 ? noteX - noteR + 1 : noteX + noteR - 1
-  const stemStart = noteY + stemDir * noteR * 0.5
-  const stemEnd   = noteY + stemDir * lineGap * 6
-
-  ctx.beginPath()
-  ctx.moveTo(stemX, stemStart)
-  ctx.lineTo(stemX, stemEnd)
-  ctx.stroke()
-
-  // ── Note name label — only when hint is shown ───────────────────────
-  if (showHint) {
-    ctx.fillStyle  = textColor
-    ctx.font       = `500 ${lineGap * 1.1}px 'Geist', sans-serif`
-    ctx.textAlign  = 'center'
-    ctx.fillText(note.name, noteX, height - 6)
+    const lineGap = Math.min(height / 14, 22)
+    drawOneStaff(ctx, width, clef, note, baseNote, showHint, height / 2, lineGap)
   }
 }
+
 
 // ─── Web Audio Synth ──────────────────────────────────────────────────────
 
@@ -337,6 +379,8 @@ export default function PianoSightReading() {
   const [activeFlash, setActiveFlash] = useState<{ midi: number; color: string } | null>(null)
   const [streak, setStreak]           = useState(0)
   const [showHint, setShowHint]       = useState(false)
+  // Which staff has the active note ('both' mode uses both staves, but note is on one)
+  const [noteClef, setNoteClef]       = useState<'treble' | 'bass'>('treble')
 
   const midiConnected = midiStatus === 'connected'
 
@@ -350,10 +394,21 @@ export default function PianoSightReading() {
   }, [])
 
   // Pick random note — also resets hint
+  // In 'both' mode: 50/50 draw from treble or bass pool each turn
   const pickNote = useCallback((nextClef?: Clef) => {
-    const pool  = (nextClef ?? clef) === 'treble' ? TREBLE_NOTES : BASS_NOTES
-    const note  = pool[Math.floor(Math.random() * pool.length)]
+    const activeClef = nextClef ?? clef
+    let pool: NoteInfo[]
+    let resolvedClef: 'treble' | 'bass'
+    if (activeClef === 'both') {
+      resolvedClef = Math.random() < 0.5 ? 'treble' : 'bass'
+      pool = resolvedClef === 'treble' ? TREBLE_NOTES : BASS_NOTES
+    } else {
+      resolvedClef = activeClef
+      pool = activeClef === 'treble' ? TREBLE_NOTES : BASS_NOTES
+    }
+    const note = pool[Math.floor(Math.random() * pool.length)]
     setCurrentNote(note)
+    setNoteClef(resolvedClef)
     setFeedback('idle')
     setShowHint(false)
   }, [clef])
@@ -434,7 +489,7 @@ export default function PianoSightReading() {
         canvas.height = h * dpr
         ctx.scale(dpr, dpr)
       }
-      drawStaff(ctx, w, h, clef, currentNote, feedback, isDark, showHint)
+      drawStaff(ctx, w, h, clef, currentNote, feedback, isDark, showHint, noteClef)
       rafRef.current = requestAnimationFrame(loop)
     }
     loop()
@@ -442,7 +497,7 @@ export default function PianoSightReading() {
       running = false
       cancelAnimationFrame(rafRef.current)
     }
-  }, [clef, currentNote, feedback, isDark, showHint])
+  }, [clef, currentNote, feedback, isDark, showHint, noteClef])
 
 
   // ── Web MIDI ──────────────────────────────────────────────────────────
@@ -516,8 +571,12 @@ export default function PianoSightReading() {
   }
 
   // ── Derived keyboard range ─────────────────────────────────────────────
+  // 'both' mode spans E2–C6 so show octaves 2–5
   const kbStart = clef === 'treble' ? 3 : 2
-  const kbEnd   = clef === 'treble' ? 5 : 4
+  const kbEnd   = clef === 'treble' ? 5 : clef === 'bass' ? 4 : 5
+
+  // Canvas height: taller in 'both' mode to fit two staves
+  const canvasHeight = clef === 'both' ? 400 : 220
 
   const accuracy = score.correct + score.wrong > 0
     ? Math.round((score.correct / (score.correct + score.wrong)) * 100)
@@ -554,7 +613,7 @@ export default function PianoSightReading() {
             className="flex items-center gap-1 rounded-full p-1"
             style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}
           >
-            {(['treble', 'bass'] as Clef[]).map(c => (
+            {(['treble', 'bass', 'both'] as Clef[]).map(c => (
               <button
                 key={c}
                 onClick={() => switchClef(c)}
@@ -564,7 +623,7 @@ export default function PianoSightReading() {
                   color: clef === c ? 'var(--paper)' : 'var(--muted)',
                 }}
               >
-                {c === 'treble' ? '𝄞 Treble' : '𝄢 Bass'}
+                {c === 'treble' ? '𝄞 Treble' : c === 'bass' ? '𝄢 Bass' : '𝄞𝄢 Both'}
               </button>
             ))}
           </div>
@@ -656,7 +715,7 @@ export default function PianoSightReading() {
         >
           <canvas
             ref={canvasRef}
-            style={{ width: '100%', height: 220, display: 'block' }}
+            style={{ width: '100%', height: canvasHeight, display: 'block' }}
           />
           {/* Feedback overlay message */}
           {feedback !== 'idle' && (
