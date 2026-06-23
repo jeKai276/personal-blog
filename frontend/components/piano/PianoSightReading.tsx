@@ -1,6 +1,17 @@
 'use client'
 
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
+
+// ─── Responsive hook ───────────────────────────────────────────────────────
+function useWindowWidth() {
+  const [w, setW] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024)
+  useEffect(() => {
+    const handler = () => setW(window.innerWidth)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return w
+}
 
 // ─── Music Theory Data ─────────────────────────────────────────────────────
 
@@ -211,11 +222,9 @@ function drawStaff(
   const idleNote = isDark ? '#ebe5f4' : '#1f1a26'
 
   if (clef === 'both') {
-    // 12 lineGaps between the two midY points ensures Middle C overlaps exactly.
-    // Need space for 4 ledger lines above Treble and below Bass:
-    // Treble top ledger = midY_treble - 12 * lineGap = height / 2 - 18 * lineGap.
-    // So lineGap <= height / 36.
-    const lineGap = Math.min(height / 36, 16)
+    // Tight spacing for Grand Staff — enough room for middle C ledger line.
+    // With mobile canvas 200px: lineGap = 200/24 = 8.3px (5 lines span 33px — compact but readable).
+    const lineGap = Math.min(height / 24, 12)
     const midY_treble = height / 2 - 6 * lineGap
     const midY_bass   = height / 2 + 6 * lineGap
 
@@ -273,9 +282,9 @@ function drawStaff(
       midY_bass, lineGap,
     )
   } else {
-    // Need space for 4 ledger lines (8 lineGaps) + staff top (4 lineGaps) = 12 lineGaps.
-    // So midY (height / 2) >= 12 * lineGap => lineGap <= height / 24.
-    const lineGap = Math.min(height / 24, 22)
+    // Single staff: allow 2 ledger lines above+below (4 lineGaps safety zone each side).
+    // With mobile canvas 140px: lineGap = 140/20 = 7px (4 staff lines span 28px — tight but OK).
+    const lineGap = Math.min(height / 20, 18)
     drawOneStaff(ctx, width, clef, note, baseNote, showHint, height / 2, lineGap)
   }
 }
@@ -325,11 +334,16 @@ interface KeyboardProps {
   midiConnected: boolean
 }
 
-// Fixed key dimensions (touch-friendly)
-const WHITE_W  = 42   // px — wide enough for finger tap
-const WHITE_H  = 130
-const BLACK_W  = 26
-const BLACK_H  = 82
+// Fixed key dimensions — these will be overridden per-render based on screen size.
+// See VirtualKeyboard component which reads isMobile to scale down.
+const WHITE_W_DESK  = 42
+const WHITE_H_DESK  = 130
+const BLACK_W_DESK  = 26
+const BLACK_H_DESK  = 82
+const WHITE_W_MOB   = 28
+const WHITE_H_MOB   = 90
+const BLACK_W_MOB   = 18
+const BLACK_H_MOB   = 56
 // Semitone offset within an octave for each white key (C D E F G A B)
 const WHITE_SEMITONES_LIST = [0, 2, 4, 5, 7, 9, 11]
 // Black key semitones and their left-offset relative to the octave block
@@ -343,6 +357,14 @@ const BLACK_KEYS_DEF = [
 ]
 
 function VirtualKeyboard({ startOctave, endOctave, highlightMidi, scrollHintMidi, activeFlash, onNotePlay, midiConnected }: KeyboardProps) {
+  const screenW = useWindowWidth()
+  const isMobile = screenW < 640
+
+  const WHITE_W = isMobile ? WHITE_W_MOB : WHITE_W_DESK
+  const WHITE_H = isMobile ? WHITE_H_MOB : WHITE_H_DESK
+  const BLACK_W = isMobile ? BLACK_W_MOB : BLACK_W_DESK
+  const BLACK_H = isMobile ? BLACK_H_MOB : BLACK_H_DESK
+
   const octaves  = endOctave - startOctave + 1
   const totalPxW = octaves * 7 * WHITE_W
 
@@ -781,8 +803,12 @@ export default function PianoSightReading() {
   const kbStart = rangeStartOct
   const kbEnd   = rangeEndOct
 
-  // Canvas height: increased by ~35-40% to fit extreme ledger lines
-  const canvasHeight = clef === 'both' ? 550 : 300
+  // Responsive canvas height
+  const screenW = useWindowWidth()
+  const isMobile = screenW < 640
+  const canvasHeight = isMobile
+    ? (clef === 'both' ? 200 : 140)
+    : (clef === 'both' ? 380 : 240)
 
   const accuracy = score.correct + score.wrong > 0
     ? Math.round((score.correct / (score.correct + score.wrong)) * 100)
@@ -796,38 +822,73 @@ export default function PianoSightReading() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--paper)', color: 'var(--ink)' }}>
-      <div className="max-w-3xl mx-auto px-4 py-10 sm:px-6">
+    <div
+      style={{
+        background: 'var(--paper)',
+        color: 'var(--ink)',
+        height: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Scrollable content area — grows to fill, scrolls only if needed on large screens */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: isMobile ? 'hidden' : 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+      <div
+        style={{
+          maxWidth: 768,
+          width: '100%',
+          margin: '0 auto',
+          padding: isMobile ? '8px 12px 4px' : '40px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+        }}
+      >
 
-        {/* ── Header ─────────────────────────────────────────────────── */}
-        <div className="mb-8 text-center">
-          <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>
-            ✦ — Music
-          </p>
-          <h1 className="text-4xl sm:text-5xl font-serif font-bold leading-tight" style={{ color: 'var(--ink)' }}>
-            Piano Sight Reading
-          </h1>
-          <p className="mt-3 text-base" style={{ color: 'var(--muted)' }}>
-            Read the note on the staff and play it on the keyboard.
-          </p>
-        </div>
+        {/* ── Header (hidden on mobile) ─────────────────────────────────── */}
+        {!isMobile && (
+          <div className="mb-6 text-center">
+            <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>
+              ✦ — Music
+            </p>
+            <h1 className="text-4xl sm:text-5xl font-serif font-bold leading-tight" style={{ color: 'var(--ink)' }}>
+              Piano Sight Reading
+            </h1>
+            <p className="mt-3 text-base" style={{ color: 'var(--muted)' }}>
+              Read the note on the staff and play it on the keyboard.
+            </p>
+          </div>
+        )}
 
-        {/* ── Controls row ────────────────────────────────────────────── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          {/* Clef toggle */}
-          <div className="flex flex-wrap items-center gap-3">
+        {/* ── Controls row ─────────────────────────────────────────────── */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: isMobile ? 6 : 16 }}>
+          {/* Clef toggle + Range */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
             <div
-              className="flex items-center gap-1 rounded-full p-1"
-              style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 2, borderRadius: 999, padding: 3, background: 'var(--paper-2)', border: '1px solid var(--line)' }}
             >
               {(['treble', 'bass', 'both'] as Clef[]).map(c => (
                 <button
                   key={c}
                   onClick={() => switchClef(c)}
-                  className="px-4 py-1.5 text-sm rounded-full font-medium transition-all"
                   style={{
+                    padding: isMobile ? '3px 10px' : '6px 16px',
+                    fontSize: isMobile ? 11 : 13,
+                    borderRadius: 999,
+                    fontWeight: 500,
+                    border: 'none',
+                    cursor: 'pointer',
                     background: clef === c ? 'var(--ink)' : 'transparent',
                     color: clef === c ? 'var(--paper)' : 'var(--muted)',
+                    transition: 'background 0.15s',
                   }}
                 >
                   {c === 'treble' ? '𝄞 Treble' : c === 'bass' ? '𝄢 Bass' : '𝄞𝄢 Both'}
@@ -836,20 +897,17 @@ export default function PianoSightReading() {
             </div>
 
             {/* Range Configuration */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>
-              <span className="font-medium text-[11px] uppercase tracking-wider" style={{ color: 'var(--muted)' }}>Range:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '3px 8px' : '6px 12px', borderRadius: 999, background: 'var(--paper-2)', border: '1px solid var(--line)', fontSize: isMobile ? 11 : 13 }}>
+              <span style={{ fontWeight: 500, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)' }}>Range:</span>
 
-              {/* Start Note — C notes only */}
               <select
                 value={rangeStartOct}
                 onChange={(e) => {
                   const oct = Number(e.target.value)
                   setRangeStartOct(oct)
-                  // Auto-correct: end octave must be >= start octave
                   if (oct > rangeEndOct) setRangeEndOct(oct)
                 }}
-                className="bg-transparent outline-none font-semibold appearance-none cursor-pointer"
-                style={{ color: 'var(--ink)' }}
+                style={{ background: 'transparent', outline: 'none', fontWeight: 600, appearance: 'none', cursor: 'pointer', color: 'var(--ink)', fontSize: 'inherit' }}
               >
                 {RANGE_START_OPTIONS.map(o => (
                   <option key={o.octave} value={o.octave} style={{ color: '#000' }}>{o.label}</option>
@@ -858,17 +916,14 @@ export default function PianoSightReading() {
 
               <span style={{ color: 'var(--muted)' }}>—</span>
 
-              {/* End Note — B notes only */}
               <select
                 value={rangeEndOct}
                 onChange={(e) => {
                   const oct = Number(e.target.value)
                   setRangeEndOct(oct)
-                  // Auto-correct: start octave must be <= end octave
                   if (oct < rangeStartOct) setRangeStartOct(oct)
                 }}
-                className="bg-transparent outline-none font-semibold appearance-none cursor-pointer"
-                style={{ color: 'var(--ink)' }}
+                style={{ background: 'transparent', outline: 'none', fontWeight: 600, appearance: 'none', cursor: 'pointer', color: 'var(--ink)', fontSize: 'inherit' }}
               >
                 {RANGE_END_OPTIONS.map(o => (
                   <option key={o.octave} value={o.octave} style={{ color: '#000' }}>{o.label}</option>
@@ -882,16 +937,18 @@ export default function PianoSightReading() {
             id="btn-connect-piano"
             onClick={connectMidi}
             disabled={midiConnected}
-            className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all"
             style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: isMobile ? '4px 10px' : '8px 18px',
+              borderRadius: 999, fontSize: isMobile ? 11 : 13, fontWeight: 500,
+              border: 'none', cursor: midiConnected ? 'default' : 'pointer',
               background: midiConnected ? 'oklch(0.55 0.16 145)' : 'var(--ink)',
               color: 'var(--paper)',
-              opacity: midiConnected ? 1 : 1,
-              cursor: midiConnected ? 'default' : 'pointer',
+              transition: 'background 0.15s',
             }}
           >
-            <span className={`w-2 h-2 rounded-full ${midiConnected ? 'bg-green-300 animate-pulse' : 'bg-gray-400'}`} />
-            {midiConnected ? 'MIDI Connected' : 'Connect Piano'}
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: midiConnected ? '#86efac' : '#9ca3af', display: 'inline-block' }} />
+            {midiConnected ? 'Connected' : 'Connect Piano'}
           </button>
         </div>
 
@@ -910,44 +967,54 @@ export default function PianoSightReading() {
           </div>
         )}
 
-        {/* ── Score & streak ───────────────────────────────────────────── */}
+        {/* ── Score & streak ─────────────────────────────────────────── */}
         <div
-          className="flex items-center justify-center gap-6 py-4 mb-6 rounded-2xl"
-          style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: isMobile ? 12 : 24,
+            padding: isMobile ? '6px 0' : '16px 0',
+            marginBottom: isMobile ? 6 : 16,
+            borderRadius: 16,
+            background: 'var(--paper-2)',
+            border: '1px solid var(--line)',
+          }}
         >
-          <div className="text-center">
-            <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>{score.correct}</div>
-            <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Correct</div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 700, color: '#22c55e' }}>{score.correct}</div>
+            <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)' }}>Correct</div>
           </div>
-          <div className="w-px h-8" style={{ background: 'var(--line)' }} />
-          <div className="text-center">
-            <div className="text-2xl font-bold" style={{ color: '#ef4444' }}>{score.wrong}</div>
-            <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Wrong</div>
+          <div style={{ width: 1, height: 28, background: 'var(--line)' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 700, color: '#ef4444' }}>{score.wrong}</div>
+            <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)' }}>Wrong</div>
           </div>
           {accuracy !== null && (
             <>
-              <div className="w-px h-8" style={{ background: 'var(--line)' }} />
-              <div className="text-center">
-                <div className="text-2xl font-bold" style={{ color: 'var(--accent-strong)' }}>{accuracy}%</div>
-                <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Accuracy</div>
+              <div style={{ width: 1, height: 28, background: 'var(--line)' }} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 700, color: 'var(--accent-strong)' }}>{accuracy}%</div>
+                <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)' }}>Accuracy</div>
               </div>
             </>
           )}
           {streak >= 3 && (
             <>
-              <div className="w-px h-8" style={{ background: 'var(--line)' }} />
-              <div className="text-center">
-                <div className="text-2xl font-bold" style={{ color: '#f59e0b' }}>🔥 {streak}</div>
-                <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Streak</div>
+              <div style={{ width: 1, height: 28, background: 'var(--line)' }} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 700, color: '#f59e0b' }}>🔥 {streak}</div>
+                <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)' }}>Streak</div>
               </div>
             </>
           )}
         </div>
 
-        {/* ── Staff canvas ─────────────────────────────────────────────── */}
+        {/* ── Staff canvas ──────────────────────────────────────────────── */}
         <div
-          className="relative rounded-3xl overflow-hidden mb-6"
           style={{
+            position: 'relative',
+            borderRadius: 16,
+            overflow: 'hidden',
+            marginBottom: isMobile ? 6 : 16,
             background: isDark ? 'rgba(255,255,255,0.04)' : '#fffdf8',
             border: `2px solid ${
               feedback === 'correct' ? '#22c55e'
@@ -960,22 +1027,22 @@ export default function PianoSightReading() {
               ? '0 0 0 4px oklch(0.85 0.12 25 / 0.3)'
               : 'none',
             transition: 'border-color 0.15s, box-shadow 0.15s',
+            flexShrink: 0,
           }}
         >
           <canvas
             ref={canvasRef}
             style={{ width: '100%', height: canvasHeight, display: 'block' }}
           />
-          {/* Feedback overlay message */}
           {feedback !== 'idle' && (
             <div
-              className="absolute inset-0 flex items-end justify-center pb-3 pointer-events-none"
               style={{
-                fontSize: 13,
-                fontWeight: 600,
+                position: 'absolute', inset: 0,
+                display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+                paddingBottom: 8, pointerEvents: 'none',
+                fontSize: 12, fontWeight: 600,
                 color: feedback === 'correct' ? '#22c55e' : '#ef4444',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
+                letterSpacing: '0.08em', textTransform: 'uppercase',
               }}
             >
               {feedback === 'correct' ? '✓ Correct!' : '✗ Try again'}
@@ -983,31 +1050,37 @@ export default function PianoSightReading() {
           )}
         </div>
 
-        {/* ── Actions row: Skip + Hint ──────────────────────────────────── */}
-        <div className="flex justify-center gap-3 mb-8">
-          {/* Skip */}
+        {/* ── Actions row: Skip + Hint ───────────────────────────────────── */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: isMobile ? 6 : 24, flexShrink: 0 }}>
           <button
             onClick={() => pickNote()}
-            className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all hover:opacity-80"
-            style={{ background: 'var(--paper-2)', border: '1px solid var(--line)', color: 'var(--ink-2)' }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: isMobile ? '5px 14px' : '8px 20px',
+              borderRadius: 999, fontSize: isMobile ? 12 : 14, fontWeight: 500,
+              border: '1px solid var(--line)', cursor: 'pointer',
+              background: 'var(--paper-2)', color: 'var(--ink-2)',
+              transition: 'opacity 0.15s',
+            }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
             Skip
           </button>
 
-          {/* Hint — reveals note name on staff + highlights keyboard key */}
           <button
             onClick={() => setShowHint(h => !h)}
-            className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-medium transition-all"
             style={{
-              background: showHint ? 'oklch(0.55 0.18 280)' : 'var(--paper-2)',
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: isMobile ? '5px 14px' : '8px 20px',
+              borderRadius: 999, fontSize: isMobile ? 12 : 14, fontWeight: 500,
               border: showHint ? '1px solid oklch(0.55 0.18 280)' : '1px solid var(--line)',
+              cursor: 'pointer',
+              background: showHint ? 'oklch(0.55 0.18 280)' : 'var(--paper-2)',
               color: showHint ? '#fff' : 'var(--ink-2)',
+              transition: 'all 0.15s',
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -1017,14 +1090,22 @@ export default function PianoSightReading() {
         </div>
 
 
-        {/* ── Virtual Keyboard ─────────────────────────────────────────── */}
+        {/* ── Virtual Keyboard ──────────────────────────────────────────── */}
         <div
-          className="rounded-2xl p-4"
-          style={{ background: 'var(--paper-2)', border: '1px solid var(--line)', overflow: 'hidden' }}
+          style={{
+            borderRadius: 14,
+            padding: isMobile ? '8px 8px 4px' : '16px',
+            background: 'var(--paper-2)',
+            border: '1px solid var(--line)',
+            overflow: 'hidden',
+            flexShrink: 0,
+          }}
         >
-          <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
-            Virtual Keyboard
-          </p>
+          {!isMobile && (
+            <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, color: 'var(--muted)' }}>
+              Virtual Keyboard
+            </p>
+          )}
           <VirtualKeyboard
             startOctave={kbStart}
             endOctave={kbEnd}
@@ -1036,43 +1117,44 @@ export default function PianoSightReading() {
           />
         </div>
 
-        {/* ── PC Key guide ─────────────────────────────────────────────── */}
-        <div className="mt-6 rounded-2xl p-4" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>
-          <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
-            Keyboard Shortcuts (C4–C5)
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(PC_KEY_MAP).map(([key, midi]) => {
-              const noteName = MIDI_NAMES[midi] ?? `M${midi}`
+        {/* ── PC Key guide & How-to-play (desktop only) ─────────────────── */}
+        {!isMobile && (
+          <>
+            <div className="mt-6 rounded-2xl p-4" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>
+              <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
+                Keyboard Shortcuts (C4–C5)
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(PC_KEY_MAP).map(([key, midi]) => {
+                  const noteName = MIDI_NAMES[midi] ?? `M${midi}`
+                  return (
+                    <div key={key} className="flex flex-col items-center gap-1">
+                      <kbd
+                        className="w-8 h-8 grid place-items-center rounded-lg text-xs font-mono font-bold uppercase"
+                        style={{ background: 'var(--paper)', border: '1px solid var(--line)', color: 'var(--ink)' }}
+                      >
+                        {key}
+                      </kbd>
+                      <span className="text-[10px]" style={{ color: 'var(--muted)' }}>{noteName}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
 
-              return (
-                <div key={key} className="flex flex-col items-center gap-1">
-                  <kbd
-                    className="w-8 h-8 grid place-items-center rounded-lg text-xs font-mono font-bold uppercase"
-                    style={{ background: 'var(--paper)', border: '1px solid var(--line)', color: 'var(--ink)' }}
-                  >
-                    {key}
-                  </kbd>
-                  <span className="text-[10px]" style={{ color: 'var(--muted)' }}>{noteName}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+            <div className="mt-6 rounded-2xl p-5" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>
+              <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>How to play</p>
+              <ol className="space-y-2 text-sm" style={{ color: 'var(--ink-2)' }}>
+                <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>1.</span> A random note appears on the staff above.</li>
+                <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>2.</span> Identify the note name and play it on the keyboard.</li>
+                <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>3.</span> <span style={{ color: '#22c55e' }}>Green</span> = correct, next note loads automatically. <span style={{ color: '#ef4444' }}>Red</span> = wrong, try again.</li>
+                <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>4.</span> Connect a MIDI piano to use a real instrument — web audio mutes automatically.</li>
+              </ol>
+            </div>
+          </>
+        )}
 
-        {/* ── How to play ──────────────────────────────────────────────── */}
-        <div className="mt-6 rounded-2xl p-5" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>
-          <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
-            How to play
-          </p>
-          <ol className="space-y-2 text-sm" style={{ color: 'var(--ink-2)' }}>
-            <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>1.</span> A random note appears on the staff above.</li>
-            <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>2.</span> Identify the note name and play it on the keyboard.</li>
-            <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>3.</span> <span style={{ color: '#22c55e' }}>Green</span> = correct, next note loads automatically. <span style={{ color: '#ef4444' }}>Red</span> = wrong, try again.</li>
-            <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>4.</span> Connect a MIDI piano to use a real instrument — web audio mutes automatically.</li>
-          </ol>
-        </div>
-
+      </div>
       </div>
     </div>
   )
