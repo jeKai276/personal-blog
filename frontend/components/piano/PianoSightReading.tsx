@@ -78,9 +78,21 @@ const BASS_NOTES: NoteInfo[] = [
   { midi: 71, name: 'B4', pitchClass: 'B', octave: 4, staffPosition: 12, accidental: '' },
 ]
 
-// All available white notes for the dropdown options
-const ALL_WHITE_NOTES = Array.from(new Set([...BASS_NOTES, ...TREBLE_NOTES]))
-  .sort((a, b) => a.midi - b.midi)
+// Fixed range options: Start = C notes, End = B notes (one full octave each)
+const RANGE_START_OPTIONS = [
+  { label: 'C2', octave: 2, midi: 36 },
+  { label: 'C3', octave: 3, midi: 48 },
+  { label: 'C4', octave: 4, midi: 60 },
+  { label: 'C5', octave: 5, midi: 72 },
+  { label: 'C6', octave: 6, midi: 84 },
+]
+const RANGE_END_OPTIONS = [
+  { label: 'B2', octave: 2, midi: 47 },
+  { label: 'B3', octave: 3, midi: 59 },
+  { label: 'B4', octave: 4, midi: 71 },
+  { label: 'B5', octave: 5, midi: 83 },
+  { label: 'B6', octave: 6, midi: 95 },
+]
 
 // ─── Canvas Staff Drawing ─────────────────────────────────────────────────
 
@@ -427,8 +439,9 @@ export default function PianoSightReading() {
   const rafRef        = useRef<number>(0)
 
   const [clef, setClef]               = useState<Clef>('treble')
-  const [minNote, setMinNote]         = useState<number>(48) // Default C3
-  const [maxNote, setMaxNote]         = useState<number>(83) // Default B5
+  // Range state: stored as octave numbers (2–6) for C-start and B-end
+  const [rangeStartOct, setRangeStartOct] = useState<number>(3) // Default start: C3 (MIDI 48)
+  const [rangeEndOct,   setRangeEndOct]   = useState<number>(5) // Default end:   B5 (MIDI 83)
   const [currentNote, setCurrentNote] = useState<NoteInfo | null>(null)
   const [feedback, setFeedback]       = useState<'correct' | 'wrong' | 'idle'>('idle')
   const [midiStatus, setMidiStatus]   = useState<'disconnected' | 'connected' | 'error' | 'unsupported'>('disconnected')
@@ -441,6 +454,10 @@ export default function PianoSightReading() {
   const [noteClef, setNoteClef]       = useState<'treble' | 'bass'>('treble')
 
   const midiConnected = midiStatus === 'connected'
+
+  // Derive exact MIDI bounds from the octave selectors
+  const minNoteMidi = RANGE_START_OPTIONS.find(o => o.octave === rangeStartOct)?.midi ?? 48
+  const maxNoteMidi = RANGE_END_OPTIONS.find(o => o.octave === rangeEndOct)?.midi ?? 83
 
   // Detect theme
   useEffect(() => {
@@ -465,10 +482,10 @@ export default function PianoSightReading() {
       pool = activeClef === 'treble' ? TREBLE_NOTES : BASS_NOTES
     }
 
-    // Filter by minNote and maxNote limits
-    let filteredPool = pool.filter(n => n.midi >= minNote && n.midi <= maxNote)
+    // Filter by the configured MIDI range [minNoteMidi, maxNoteMidi]
+    let filteredPool = pool.filter(n => n.midi >= minNoteMidi && n.midi <= maxNoteMidi)
     if (filteredPool.length === 0) {
-      // Fallback if range is too narrow for the selected clef
+      // Fallback if range produces no notes for this clef — use full pool
       filteredPool = pool
     }
 
@@ -477,7 +494,7 @@ export default function PianoSightReading() {
     setNoteClef(resolvedClef)
     setFeedback('idle')
     setShowHint(false)
-  }, [clef, minNote, maxNote])
+  }, [clef, minNoteMidi, maxNoteMidi])
 
   // Init game
   useEffect(() => {
@@ -757,34 +774,40 @@ export default function PianoSightReading() {
             {/* Range Configuration */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>
               <span className="font-medium text-[11px] uppercase tracking-wider" style={{ color: 'var(--muted)' }}>Range:</span>
-              
+
+              {/* Start Note — C notes only */}
               <select
-                value={minNote}
+                value={rangeStartOct}
                 onChange={(e) => {
-                  const val = Number(e.target.value)
-                  if (val <= maxNote) setMinNote(val)
+                  const oct = Number(e.target.value)
+                  setRangeStartOct(oct)
+                  // Auto-correct: end octave must be >= start octave
+                  if (oct > rangeEndOct) setRangeEndOct(oct)
                 }}
-                className="bg-transparent outline-none font-medium appearance-none cursor-pointer"
+                className="bg-transparent outline-none font-semibold appearance-none cursor-pointer"
                 style={{ color: 'var(--ink)' }}
               >
-                {ALL_WHITE_NOTES.map(n => (
-                  <option key={n.midi} value={n.midi} style={{ color: '#000' }}>{n.name}</option>
+                {RANGE_START_OPTIONS.map(o => (
+                  <option key={o.octave} value={o.octave} style={{ color: '#000' }}>{o.label}</option>
                 ))}
               </select>
-              
+
               <span style={{ color: 'var(--muted)' }}>—</span>
-              
+
+              {/* End Note — B notes only */}
               <select
-                value={maxNote}
+                value={rangeEndOct}
                 onChange={(e) => {
-                  const val = Number(e.target.value)
-                  if (val >= minNote) setMaxNote(val)
+                  const oct = Number(e.target.value)
+                  setRangeEndOct(oct)
+                  // Auto-correct: start octave must be <= end octave
+                  if (oct < rangeStartOct) setRangeStartOct(oct)
                 }}
-                className="bg-transparent outline-none font-medium appearance-none cursor-pointer"
+                className="bg-transparent outline-none font-semibold appearance-none cursor-pointer"
                 style={{ color: 'var(--ink)' }}
               >
-                {ALL_WHITE_NOTES.map(n => (
-                  <option key={n.midi} value={n.midi} style={{ color: '#000' }}>{n.name}</option>
+                {RANGE_END_OPTIONS.map(o => (
+                  <option key={o.octave} value={o.octave} style={{ color: '#000' }}>{o.label}</option>
                 ))}
               </select>
             </div>
