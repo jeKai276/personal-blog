@@ -177,8 +177,10 @@ function drawStaff(
 
   if (clef === 'both') {
     // 12 lineGaps between the two midY points ensures Middle C overlaps exactly.
-    // Calculate lineGap so that the highest note (C6) and lowest note (E2) fit inside canvas.
-    const lineGap = Math.min(height / 32, 12)
+    // Need space for 4 ledger lines above Treble and below Bass:
+    // Treble top ledger = midY_treble - 12 * lineGap = height / 2 - 18 * lineGap.
+    // So lineGap <= height / 36.
+    const lineGap = Math.min(height / 36, 16)
     const midY_treble = height / 2 - 6 * lineGap
     const midY_bass   = height / 2 + 6 * lineGap
 
@@ -236,7 +238,9 @@ function drawStaff(
       midY_bass, lineGap,
     )
   } else {
-    const lineGap = Math.min(height / 14, 22)
+    // Need space for 4 ledger lines (8 lineGaps) + staff top (4 lineGaps) = 12 lineGaps.
+    // So midY (height / 2) >= 12 * lineGap => lineGap <= height / 24.
+    const lineGap = Math.min(height / 24, 22)
     drawOneStaff(ctx, width, clef, note, baseNote, showHint, height / 2, lineGap)
   }
 }
@@ -663,8 +667,8 @@ export default function PianoSightReading() {
   const kbStart = clef === 'treble' ? 3 : 2
   const kbEnd   = clef === 'treble' ? 5 : clef === 'bass' ? 4 : 5
 
-  // Canvas height: taller in 'both' mode to fit two staves
-  const canvasHeight = clef === 'both' ? 400 : 220
+  // Canvas height: increased by ~35-40% to fit extreme ledger lines
+  const canvasHeight = clef === 'both' ? 550 : 300
 
   const accuracy = score.correct + score.wrong > 0
     ? Math.round((score.correct / (score.correct + score.wrong)) * 100)
