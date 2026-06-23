@@ -533,6 +533,7 @@ export default function PianoSightReading() {
   const canvasRef     = useRef<HTMLCanvasElement>(null)
   const audioCtxRef   = useRef<AudioContext | null>(null)
   const midiAccessRef = useRef<MIDIAccess | null>(null)
+  const bluetoothDeviceRef = useRef<any>(null)
   const rafRef        = useRef<number>(0)
 
   const [clef, setClef]               = useState<Clef>('treble')
@@ -731,6 +732,7 @@ export default function PianoSightReading() {
         const device = await nav.bluetooth.requestDevice({
           filters: [{ services: ['03b80e5a-ede8-4b33-a751-6ce34ec4c700'] }]
         })
+        bluetoothDeviceRef.current = device
         const server = await device.gatt?.connect()
         if (!server) throw new Error("GATT connection failed")
         
@@ -789,6 +791,23 @@ export default function PianoSightReading() {
 
     // 3. Neither supported
     setMidiStatus('unsupported')
+  }, [])
+
+  const disconnectMidi = useCallback(() => {
+    // Disconnect Web MIDI by clearing listeners
+    if (midiAccessRef.current) {
+      midiAccessRef.current.inputs.forEach(input => {
+        input.onmidimessage = null
+      })
+    }
+    
+    // Disconnect Web Bluetooth
+    if (bluetoothDeviceRef.current && bluetoothDeviceRef.current.gatt?.connected) {
+      bluetoothDeviceRef.current.gatt.disconnect()
+      bluetoothDeviceRef.current = null
+    }
+
+    setMidiStatus('disconnected')
   }, [])
 
   // ── PC Keyboard ───────────────────────────────────────────────────────
@@ -939,20 +958,29 @@ export default function PianoSightReading() {
           {/* MIDI connect */}
           <button
             id="btn-connect-piano"
-            onClick={connectMidi}
-            disabled={midiConnected}
+            onClick={midiConnected ? disconnectMidi : connectMidi}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: isMobile ? '4px 10px' : '8px 18px',
               borderRadius: 999, fontSize: isMobile ? 11 : 13, fontWeight: 500,
-              border: 'none', cursor: midiConnected ? 'default' : 'pointer',
-              background: midiConnected ? 'oklch(0.55 0.16 145)' : 'var(--ink)',
-              color: 'var(--paper)',
-              transition: 'background 0.15s',
+              border: 'none', cursor: 'pointer',
+              background: midiConnected ? 'oklch(0.55 0.16 145 / 0.1)' : 'var(--ink)',
+              color: midiConnected ? 'oklch(0.55 0.16 145)' : 'var(--paper)',
+              boxShadow: midiConnected ? 'inset 0 0 0 1px oklch(0.55 0.16 145)' : 'none',
+              transition: 'background 0.15s, color 0.15s',
             }}
           >
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: midiConnected ? '#86efac' : '#9ca3af', display: 'inline-block' }} />
-            {midiConnected ? 'Connected' : 'Connect Piano'}
+            {midiConnected ? (
+              <>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                Disconnect Piano
+              </>
+            ) : (
+              <>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#9ca3af', display: 'inline-block' }} />
+                Connect Piano
+              </>
+            )}
           </button>
         </div>
 
