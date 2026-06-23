@@ -324,92 +324,153 @@ interface KeyboardProps {
   midiConnected: boolean
 }
 
+// Fixed key dimensions (touch-friendly)
+const WHITE_W  = 42   // px — wide enough for finger tap
+const WHITE_H  = 130
+const BLACK_W  = 26
+const BLACK_H  = 82
+// Semitone offset within an octave for each white key (C D E F G A B)
+const WHITE_SEMITONES_LIST = [0, 2, 4, 5, 7, 9, 11]
+// Black key semitones and their left-offset relative to the octave block
+// offset = how many white-key widths from the left of the C key
+const BLACK_KEYS_DEF = [
+  { semitone: 1,  leftFrac: 0.6 },  // C#
+  { semitone: 3,  leftFrac: 1.6 },  // D#
+  { semitone: 6,  leftFrac: 3.6 },  // F#
+  { semitone: 8,  leftFrac: 4.6 },  // G#
+  { semitone: 10, leftFrac: 5.6 },  // A#
+]
+
 function VirtualKeyboard({ startOctave, endOctave, highlightMidi, activeFlash, onNotePlay, midiConnected }: KeyboardProps) {
   const octaves  = endOctave - startOctave + 1
-  const totalW   = octaves * WHITE_KEYS_PER_OCTAVE
+  const totalPxW = octaves * 7 * WHITE_W
+
+  // Ref map for auto-scroll: midi -> element
+  const keyElRefs = useRef<Map<number, HTMLElement>>(new Map())
+
+  // Auto-scroll when highlightMidi changes
+  useEffect(() => {
+    if (highlightMidi === null) return
+    const el = keyElRefs.current.get(highlightMidi)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [highlightMidi])
+
+  // Also auto-scroll on activeFlash (correct/wrong feedback)
+  useEffect(() => {
+    if (!activeFlash) return
+    const el = keyElRefs.current.get(activeFlash.midi)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [activeFlash])
 
   return (
-    <div className="relative select-none overflow-x-auto pb-2">
-      <svg
-        viewBox={`0 0 ${totalW * 24} 120`}
-        style={{ width: '100%', maxWidth: '100%', display: 'block', minWidth: 320 }}
-        aria-label="Virtual piano keyboard"
+    <div
+      style={{
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        WebkitOverflowScrolling: 'touch' as any,
+        overscrollBehaviorX: 'contain',
+        paddingBottom: 8,
+      }}
+    >
+      {/* Keyboard canvas */}
+      <div
+        style={{
+          position: 'relative',
+          width: totalPxW,
+          height: WHITE_H + 4,
+          userSelect: 'none',
+        }}
       >
         {/* White keys */}
         {Array.from({ length: octaves }, (_, oi) => {
           const oct = startOctave + oi
-          return WHITE_KEY_NAMES.map((name, ki) => {
-            const midi  = (oct + 1) * 12 + WHITE_SEMITONES[ki]
-            const xIdx  = oi * WHITE_KEYS_PER_OCTAVE + ki
-            const isFlash = activeFlash?.midi === midi
-            const isTarget = highlightMidi === midi
-
-            let fill = '#f9f9f7'
-            if (isFlash) fill = activeFlash!.color
-            else if (isTarget) fill = 'rgba(96,165,250,0.35)'
-
-            return (
-              <g key={`w-${midi}`} onClick={() => onNotePlay(midi)} style={{ cursor: 'pointer' }}>
-                <rect
-                  x={xIdx * 24 + 1}
-                  y={0}
-                  width={22}
-                  height={118}
-                  rx={3}
-                  fill={fill}
-                  stroke="#ccc"
-                  strokeWidth={1}
-                />
-                <text
-                  x={xIdx * 24 + 12}
-                  y={108}
-                  textAnchor="middle"
-                  fontSize={8}
-                  fill={isFlash || isTarget ? '#1f1a26' : '#999'}
-                  fontFamily="'Geist', sans-serif"
-                  pointerEvents="none"
-                >
-                  {name}{oct}
-                </text>
-              </g>
-            )
-          })
-        })}
-
-        {/* Black keys */}
-        {Array.from({ length: octaves }, (_, oi) => {
-          const oct = startOctave + oi
-          return Object.entries(BLACK_KEY_OFFSETS).map(([name, whiteOffset]) => {
-            const semitone = WHITE_SEMITONES[whiteOffset] + 1
-            const midi     = (oct + 1) * 12 + semitone
-            const xIdx     = oi * WHITE_KEYS_PER_OCTAVE + whiteOffset
+          return WHITE_SEMITONES_LIST.map((semitone, ki) => {
+            const midi  = (oct + 1) * 12 + semitone
+            const left  = (oi * 7 + ki) * WHITE_W
             const isFlash  = activeFlash?.midi === midi
             const isTarget = highlightMidi === midi
 
-            let fill = '#1f1a26'
-            if (isFlash) fill = activeFlash!.color
-            else if (isTarget) fill = '#3b82f6'
+            let bg = '#f9f9f7'
+            if (isFlash)  bg = activeFlash!.color
+            else if (isTarget) bg = 'rgba(96,165,250,0.45)'
 
             return (
-              <g key={`b-${midi}`} onClick={() => onNotePlay(midi)} style={{ cursor: 'pointer' }}>
-                <rect
-                  x={xIdx * 24 + 15}
-                  y={0}
-                  width={14}
-                  height={76}
-                  rx={2}
-                  fill={fill}
-                  stroke="#000"
-                  strokeWidth={0.5}
-                />
-              </g>
+              <div
+                key={`w-${midi}`}
+                ref={el => { if (el) keyElRefs.current.set(midi, el) }}
+                onClick={() => onNotePlay(midi)}
+                style={{
+                  position: 'absolute',
+                  left,
+                  top: 0,
+                  width: WHITE_W - 2,
+                  height: WHITE_H,
+                  background: bg,
+                  border: '1px solid #ccc',
+                  borderRadius: '0 0 5px 5px',
+                  cursor: 'pointer',
+                  boxSizing: 'border-box',
+                  transition: 'background 0.1s',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'center',
+                  paddingBottom: 4,
+                }}
+              >
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: isFlash || isTarget ? '#1f1a26' : '#aaa',
+                  pointerEvents: 'none',
+                  lineHeight: 1,
+                }}>
+                  {WHITE_KEY_NAMES[ki]}{oct}
+                </span>
+              </div>
             )
           })
         })}
-      </svg>
+
+        {/* Black keys — rendered above white keys */}
+        {Array.from({ length: octaves }, (_, oi) => {
+          const oct = startOctave + oi
+          return BLACK_KEYS_DEF.map(({ semitone, leftFrac }) => {
+            const midi  = (oct + 1) * 12 + semitone
+            const left  = (oi * 7 + leftFrac) * WHITE_W - BLACK_W / 2
+            const isFlash  = activeFlash?.midi === midi
+            const isTarget = highlightMidi === midi
+
+            let bg = '#1a1625'
+            if (isFlash)  bg = activeFlash!.color
+            else if (isTarget) bg = '#3b82f6'
+
+            return (
+              <div
+                key={`b-${midi}`}
+                ref={el => { if (el) keyElRefs.current.set(midi, el) }}
+                onClick={(e) => { e.stopPropagation(); onNotePlay(midi) }}
+                style={{
+                  position: 'absolute',
+                  left,
+                  top: 0,
+                  width: BLACK_W,
+                  height: BLACK_H,
+                  background: bg,
+                  border: '1px solid #000',
+                  borderRadius: '0 0 4px 4px',
+                  cursor: 'pointer',
+                  zIndex: 1,
+                  transition: 'background 0.1s',
+                }}
+              />
+            )
+          })
+        })}
+      </div>
+
       {!midiConnected && (
-        <p className="text-center text-xs mt-1" style={{ color: 'var(--muted)' }}>
-          Click a key · Use keyboard <kbd className="px-1 py-0.5 rounded text-xs" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>A–K</kbd> for C4–B4
+        <p className="text-center text-xs mt-2" style={{ color: 'var(--muted)' }}>
+          Click a key &middot; Use keyboard <kbd style={{ background: 'var(--paper-2)', border: '1px solid var(--line)', borderRadius: 4, padding: '0 4px' }}>A–K</kbd> for C4–B4
         </p>
       )}
     </div>
@@ -713,9 +774,9 @@ export default function PianoSightReading() {
   }
 
   // ── Derived keyboard range ─────────────────────────────────────────────
-  // Virtual keyboard now spans exactly C2 to B6 (5 octaves)
-  const kbStart = 2
-  const kbEnd   = 6
+  // Virtual keyboard renders ONLY the selected range for clean touch UX
+  const kbStart = rangeStartOct
+  const kbEnd   = rangeEndOct
 
   // Canvas height: increased by ~35-40% to fit extreme ledger lines
   const canvasHeight = clef === 'both' ? 550 : 300
@@ -955,8 +1016,8 @@ export default function PianoSightReading() {
 
         {/* ── Virtual Keyboard ─────────────────────────────────────────── */}
         <div
-          className="rounded-2xl p-4 overflow-x-auto whitespace-nowrap"
-          style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}
+          className="rounded-2xl p-4"
+          style={{ background: 'var(--paper-2)', border: '1px solid var(--line)', overflow: 'hidden' }}
         >
           <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
             Virtual Keyboard
@@ -964,7 +1025,7 @@ export default function PianoSightReading() {
           <VirtualKeyboard
             startOctave={kbStart}
             endOctave={kbEnd}
-            highlightMidi={showHint ? (currentNote?.midi ?? null) : null}
+            highlightMidi={currentNote?.midi ?? null}
             activeFlash={activeFlash}
             onNotePlay={handleNoteInput}
             midiConnected={midiConnected}
