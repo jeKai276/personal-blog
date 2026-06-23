@@ -837,30 +837,17 @@ export default function PianoSightReading() {
       style={{
         background: 'var(--paper)',
         color: 'var(--ink)',
-        height: '100dvh',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
+        minHeight: '100vh',
       }}
     >
-      {/* Scrollable content area — grows to fill, scrolls only if needed */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
       <div
         style={{
           maxWidth: 768,
           width: '100%',
           margin: '0 auto',
-          padding: isMobile ? '8px 12px 4px' : '40px 24px',
+          padding: isMobile ? '12px 12px 32px' : '40px 24px',
           display: 'flex',
           flexDirection: 'column',
-          flex: 1,
         }}
       >
 
@@ -1169,7 +1156,6 @@ export default function PianoSightReading() {
           </ol>
         </div>
 
-      </div>
       </div>
     </div>
   )
