@@ -519,6 +519,9 @@ const PC_KEY_MAP: Record<string, number> = {
   'g': 67, 'y': 68, 'h': 69, 'u': 70, 'j': 71, 'k': 72,
 }
 
+// Pitch classes to semitone mapping
+const PC_SEMITONES: Record<string, number> = { 'C':0, 'D':2, 'E':4, 'F':5, 'G':7, 'A':9, 'B':11 }
+
 // Full chromatic name lookup for display
 const MIDI_NAMES: Record<number, string> = {
   60: 'C4', 61: 'C#4', 62: 'D4', 63: 'D#4', 64: 'E4',
@@ -537,6 +540,7 @@ export default function PianoSightReading() {
   const rafRef        = useRef<number>(0)
 
   const [clef, setClef]               = useState<Clef>('treble')
+  const [inputMode, setInputMode]     = useState<'keyboard' | 'buttons'>('keyboard')
   // Range state: stored as octave numbers (2–6) for C-start and B-end
   const [rangeStartOct, setRangeStartOct] = useState<number>(4) // Default start: C4 (MIDI 60)
   const [rangeEndOct,   setRangeEndOct]   = useState<number>(5) // Default end:   B5 (MIDI 83)
@@ -911,6 +915,31 @@ export default function PianoSightReading() {
               ))}
             </div>
 
+            {/* Input Mode Toggle */}
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: 2, borderRadius: 999, padding: 3, background: 'var(--paper-2)', border: '1px solid var(--line)' }}
+            >
+              {(['keyboard', 'buttons'] as const).map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => setInputMode(mode)}
+                  style={{
+                    padding: isMobile ? '3px 10px' : '6px 16px',
+                    fontSize: isMobile ? 11 : 13,
+                    borderRadius: 999,
+                    fontWeight: 500,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: inputMode === mode ? 'var(--ink)' : 'transparent',
+                    color: inputMode === mode ? 'var(--paper)' : 'var(--muted)',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  {mode === 'keyboard' ? '🎹 Keyboard' : '🔠 Buttons'}
+                </button>
+              ))}
+            </div>
+
             {/* Range Configuration */}
             <div 
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '3px 12px' : '6px 16px', borderRadius: 999, background: 'var(--paper-2)', border: '1px solid var(--line)', fontSize: isMobile ? 11 : 13, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
@@ -1122,7 +1151,7 @@ export default function PianoSightReading() {
         </div>
 
 
-        {/* ── Virtual Keyboard ──────────────────────────────────────────── */}
+        {/* ── Input Area ──────────────────────────────────────────── */}
         <div
           style={{
             borderRadius: 14,
@@ -1131,21 +1160,77 @@ export default function PianoSightReading() {
             border: '1px solid var(--line)',
             overflow: 'hidden',
             flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
           }}
         >
-          <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, color: 'var(--muted)' }}>
-            Virtual Keyboard
+          <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, color: 'var(--muted)', alignSelf: 'flex-start' }}>
+            {inputMode === 'keyboard' ? 'Virtual Keyboard' : 'Note Buttons'}
           </p>
-          <VirtualKeyboard
-            startOctave={kbStart}
-            endOctave={kbEnd}
-            highlightMidi={showHint ? (currentNote?.midi ?? null) : null}
-            scrollHintMidi={showHint ? (currentNote?.midi ?? null) : null}
-            scrollRangeMidi={minNoteMidi}
-            activeFlash={activeFlash}
-            onNotePlay={handleNoteInput}
-            midiConnected={midiConnected}
-          />
+
+          {inputMode === 'keyboard' ? (
+            <div style={{ width: '100%' }}>
+              <VirtualKeyboard
+                startOctave={kbStart}
+                endOctave={kbEnd}
+                highlightMidi={showHint ? (currentNote?.midi ?? null) : null}
+                scrollHintMidi={showHint ? (currentNote?.midi ?? null) : null}
+                scrollRangeMidi={minNoteMidi}
+                activeFlash={activeFlash}
+                onNotePlay={handleNoteInput}
+                midiConnected={midiConnected}
+              />
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: isMobile ? 6 : 12, justifyContent: 'center', width: '100%', padding: '12px 0 20px 0' }}>
+              {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(pc => {
+                const semitone = PC_SEMITONES[pc]
+                const targetMidi = currentNote ? (currentNote.octave + 1) * 12 + semitone : 60 + semitone
+                
+                const isActive = activeFlash && (activeFlash.midi % 12 === semitone)
+                const isHint = showHint && (currentNote?.pitchClass === pc)
+                
+                let bg = 'var(--paper)'
+                let color = 'var(--ink)'
+                let borderColor = 'var(--line)'
+                
+                if (isActive) {
+                  bg = activeFlash.color
+                  color = '#fff'
+                  borderColor = activeFlash.color
+                } else if (isHint) {
+                  bg = '#3b82f6'
+                  color = '#fff'
+                  borderColor = '#3b82f6'
+                }
+
+                return (
+                  <button
+                    key={pc}
+                    onClick={() => handleNoteInput(targetMidi)}
+                    style={{
+                      flex: 1,
+                      maxWidth: isMobile ? 45 : 72,
+                      height: isMobile ? 70 : 100,
+                      borderRadius: 12,
+                      border: `2px solid ${borderColor}`,
+                      fontSize: isMobile ? 24 : 32,
+                      fontWeight: 700,
+                      background: bg,
+                      color: color,
+                      cursor: 'pointer',
+                      transition: 'all 0.1s',
+                      boxShadow: isActive ? `0 0px 0 ${borderColor}` : `0 4px 0 ${borderColor}`,
+                      transform: isActive ? 'translateY(4px)' : 'none',
+                    }}
+                  >
+                    {pc}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* ── PC Key guide (desktop only) ───────────────────────────── */}
