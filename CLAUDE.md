@@ -42,10 +42,12 @@ Mục đích: giới thiệu bản thân, show skills, chia sẻ ảnh và cuộ
 - requestAnimationFrame để render staff mượt
 
 ### Tính năng
-- Khóa Sol (Treble) + Khóa Fa (Bass), chuyển qua toggle button
+- Chế độ hiển thị: Khóa Sol (Treble), Khóa Fa (Bass), và Grand Staff (Cả hai), chuyển qua toggle button
+- Khóa nhạc được vẽ đúng chuẩn vị trí nhạc lý
+- Nút Hint: Tên nốt bị ẩn mặc định, bấm Hint để hiện tên nốt dưới khuông nhạc + highlight phím trên bàn phím
 - Nốt ngẫu nhiên hiển thị trên khuông nhạc với dấu gạch thêm (ledger lines)
 - Bàn phím ảo SVG (click) + bàn phím PC (phím A–K = C4–B4)
-- MIDI: nút "Connect Piano", lắng nghe NoteOn events
+- MIDI: nút "Connect Piano", hỗ trợ Web MIDI tiêu chuẩn HOẶC Web Bluetooth (BLE MIDI fallback) cho trình duyệt Bluefy/iOS.
 - Mute Web Audio khi MIDI đã kết nối
 - Feedback: xanh lá = đúng (auto next), đỏ = sai (giữ nốt)
 - Điểm số: Correct / Wrong / Accuracy % / Streak 🔥

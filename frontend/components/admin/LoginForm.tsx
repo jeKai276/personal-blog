@@ -74,10 +74,10 @@ export default function LoginForm() {
             style={{ fontSize: '36px', color: 'var(--ink)' }}
           >
             Welcome back,{' '}
-            <span style={{ fontFamily: 'Caveat, cursive', color: 'var(--accent-strong)' }}>Yen.</span>
+            <span style={{ fontFamily: 'Caveat, cursive', color: 'var(--accent-strong)' }}>Kai.</span>
           </h1>
           <p className="mt-2.5 text-[13.5px] leading-[1.55]" style={{ color: 'var(--ink-2)' }}>
-            Admin access only &mdash; for drafting, editing &amp; publishing posts.
+            Admin access only &mdash; for drafting, editing &amp; publishing.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">

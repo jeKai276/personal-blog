@@ -873,10 +873,11 @@ Không cần backend mới — toàn bộ là client-side Vanilla JS.
 
 ### Tính năng đã implement
 
-- [x] Canvas 2D staff — 5 dòng kẻ, khóa Sol/Fa (Unicode 𝄞 𝄢), ledger lines tự động
+- [x] Canvas 2D staff — 5 dòng kẻ, khóa Sol/Fa (Unicode 𝄞 𝄢), ledger lines tự động (đã fix vị trí chuẩn nhạc lý)
 - [x] Nốt ngẫu nhiên: Treble C4–C6 (15 nốt), Bass E2–E4 (15 nốt)
 - [x] Note head ellipse nghiêng + stem (hướng tự động theo vị trí)
-- [x] Clef toggle (Treble / Bass) — reset note pool khi switch
+- [x] Clef toggle (Treble / Bass / Both) — hỗ trợ chế độ Grand Staff (hiển thị 2 khuông nhạc cùng lúc)
+- [x] Nút Hint: ẩn tên nốt theo mặc định, bấm vào để hiện tên nốt và highlight bàn phím
 - [x] Web MIDI: "Connect Piano" button, lắng nghe NoteOn, auto-reattach khi device thay đổi
 - [x] Web Audio: Oscillator triangle, ADSR envelope (attack 10ms, decay ~1.8s)
 - [x] Mute Web Audio khi MIDI connected

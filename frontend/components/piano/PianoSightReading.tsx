@@ -90,15 +90,14 @@ const BASS_NOTES: NoteInfo[] = [
 ]
 
 // Fixed range options: Start = C notes, End = B notes (one full octave each)
+// Fixed range options: Start = C notes, End = B notes
 const RANGE_START_OPTIONS = [
-  { label: 'C2', octave: 2, midi: 36 },
   { label: 'C3', octave: 3, midi: 48 },
   { label: 'C4', octave: 4, midi: 60 },
   { label: 'C5', octave: 5, midi: 72 },
   { label: 'C6', octave: 6, midi: 84 },
 ]
 const RANGE_END_OPTIONS = [
-  { label: 'B2', octave: 2, midi: 47 },
   { label: 'B3', octave: 3, midi: 59 },
   { label: 'B4', octave: 4, midi: 71 },
   { label: 'B5', octave: 5, midi: 83 },
@@ -329,6 +328,7 @@ interface KeyboardProps {
   endOctave: number
   highlightMidi: number | null   // Blue hint highlight (only when showHint)
   scrollHintMidi: number | null  // Triggers scrollIntoView (only when showHint)
+  scrollRangeMidi: number | null // Triggers scroll when range changes
   activeFlash: { midi: number; color: string } | null
   onNotePlay: (midi: number) => void
   midiConnected: boolean
@@ -356,7 +356,7 @@ const BLACK_KEYS_DEF = [
   { semitone: 10, leftFrac: 5.6 },  // A#
 ]
 
-function VirtualKeyboard({ startOctave, endOctave, highlightMidi, scrollHintMidi, activeFlash, onNotePlay, midiConnected }: KeyboardProps) {
+function VirtualKeyboard({ startOctave, endOctave, highlightMidi, scrollHintMidi, scrollRangeMidi, activeFlash, onNotePlay, midiConnected }: KeyboardProps) {
   const screenW = useWindowWidth()
   const isMobile = screenW < 640
 
@@ -386,6 +386,17 @@ function VirtualKeyboard({ startOctave, endOctave, highlightMidi, scrollHintMidi
     const el = keyElRefs.current.get(scrollHintMidi)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
   }, [scrollHintMidi])
+
+  // Scroll to the start of the note range when it changes or on load
+  useEffect(() => {
+    if (scrollRangeMidi == null) return
+    const el = keyElRefs.current.get(scrollRangeMidi)
+    if (el) {
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' })
+      }, 50)
+    }
+  }, [scrollRangeMidi])
 
   return (
     <div
@@ -526,7 +537,7 @@ export default function PianoSightReading() {
 
   const [clef, setClef]               = useState<Clef>('treble')
   // Range state: stored as octave numbers (2–6) for C-start and B-end
-  const [rangeStartOct, setRangeStartOct] = useState<number>(3) // Default start: C3 (MIDI 48)
+  const [rangeStartOct, setRangeStartOct] = useState<number>(4) // Default start: C4 (MIDI 60)
   const [rangeEndOct,   setRangeEndOct]   = useState<number>(5) // Default end:   B5 (MIDI 83)
   const [currentNote, setCurrentNote] = useState<NoteInfo | null>(null)
   const [feedback, setFeedback]       = useState<'correct' | 'wrong' | 'idle'>('idle')
@@ -542,7 +553,7 @@ export default function PianoSightReading() {
   const midiConnected = midiStatus === 'connected'
 
   // Derive exact MIDI bounds from the octave selectors
-  const minNoteMidi = RANGE_START_OPTIONS.find(o => o.octave === rangeStartOct)?.midi ?? 48
+  const minNoteMidi = RANGE_START_OPTIONS.find(o => o.octave === rangeStartOct)?.midi ?? 60
   const maxNoteMidi = RANGE_END_OPTIONS.find(o => o.octave === rangeEndOct)?.midi ?? 83
 
   // Detect theme
@@ -582,10 +593,10 @@ export default function PianoSightReading() {
     setShowHint(false)
   }, [clef, minNoteMidi, maxNoteMidi])
 
-  // Init game
+  // Init game and update note when range changes
   useEffect(() => {
     pickNote()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rangeStartOct, rangeEndOct, pickNote])
 
   // ── Audio context (lazy init) ──────────────────────────────────────────
   function getAudioCtx(): AudioContext {
@@ -799,9 +810,9 @@ export default function PianoSightReading() {
   }
 
   // ── Derived keyboard range ─────────────────────────────────────────────
-  // Virtual keyboard renders ONLY the selected range for clean touch UX
-  const kbStart = rangeStartOct
-  const kbEnd   = rangeEndOct
+  // Virtual keyboard ALWAYS renders C3-B6, only the random note generation respects the range limit
+  const kbStart = 3
+  const kbEnd   = 6
 
   // Responsive canvas height
   const screenW = useWindowWidth()
@@ -853,20 +864,18 @@ export default function PianoSightReading() {
         }}
       >
 
-        {/* ── Header (hidden on mobile) ─────────────────────────────────── */}
-        {!isMobile && (
-          <div className="mb-6 text-center">
-            <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>
-              ✦ — Music
-            </p>
-            <h1 className="text-4xl sm:text-5xl font-serif font-bold leading-tight" style={{ color: 'var(--ink)' }}>
-              Piano Sight Reading
-            </h1>
-            <p className="mt-3 text-base" style={{ color: 'var(--muted)' }}>
-              Read the note on the staff and play it on the keyboard.
-            </p>
-          </div>
-        )}
+        {/* ── Header ─────────────────────────────────────────────────── */}
+        <div className="mb-4 text-center">
+          <p className="text-xs font-medium uppercase tracking-widest mb-1" style={{ color: 'var(--muted)' }}>
+            ✦ — Music
+          </p>
+          <h1 className="text-3xl sm:text-5xl font-serif font-bold leading-tight" style={{ color: 'var(--ink)' }}>
+            Piano Sight Reading
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
+            Read the note on the staff and play it on the keyboard.
+          </p>
+        </div>
 
         {/* ── Controls row ─────────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: isMobile ? 6 : 16 }}>
@@ -897,8 +906,15 @@ export default function PianoSightReading() {
             </div>
 
             {/* Range Configuration */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '3px 8px' : '6px 12px', borderRadius: 999, background: 'var(--paper-2)', border: '1px solid var(--line)', fontSize: isMobile ? 11 : 13 }}>
-              <span style={{ fontWeight: 500, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)' }}>Range:</span>
+            <div 
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '3px 12px' : '6px 16px', borderRadius: 999, background: 'var(--paper-2)', border: '1px solid var(--line)', fontSize: isMobile ? 11 : 13, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--ink)'; e.currentTarget.style.background = 'var(--paper-3)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.background = 'var(--paper-2)' }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                Range:
+              </span>
 
               <select
                 value={rangeStartOct}
@@ -929,6 +945,7 @@ export default function PianoSightReading() {
                   <option key={o.octave} value={o.octave} style={{ color: '#000' }}>{o.label}</option>
                 ))}
               </select>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--muted)', marginLeft: 2 }}><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
           </div>
 
@@ -1101,58 +1118,56 @@ export default function PianoSightReading() {
             flexShrink: 0,
           }}
         >
-          {!isMobile && (
-            <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, color: 'var(--muted)' }}>
-              Virtual Keyboard
-            </p>
-          )}
+          <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, color: 'var(--muted)' }}>
+            Virtual Keyboard
+          </p>
           <VirtualKeyboard
             startOctave={kbStart}
             endOctave={kbEnd}
             highlightMidi={showHint ? (currentNote?.midi ?? null) : null}
             scrollHintMidi={showHint ? (currentNote?.midi ?? null) : null}
+            scrollRangeMidi={minNoteMidi}
             activeFlash={activeFlash}
             onNotePlay={handleNoteInput}
             midiConnected={midiConnected}
           />
         </div>
 
-        {/* ── PC Key guide & How-to-play (desktop only) ─────────────────── */}
+        {/* ── PC Key guide (desktop only) ───────────────────────────── */}
         {!isMobile && (
-          <>
-            <div className="mt-6 rounded-2xl p-4" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>
-              <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
-                Keyboard Shortcuts (C4–C5)
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(PC_KEY_MAP).map(([key, midi]) => {
-                  const noteName = MIDI_NAMES[midi] ?? `M${midi}`
-                  return (
-                    <div key={key} className="flex flex-col items-center gap-1">
-                      <kbd
-                        className="w-8 h-8 grid place-items-center rounded-lg text-xs font-mono font-bold uppercase"
-                        style={{ background: 'var(--paper)', border: '1px solid var(--line)', color: 'var(--ink)' }}
-                      >
-                        {key}
-                      </kbd>
-                      <span className="text-[10px]" style={{ color: 'var(--muted)' }}>{noteName}</span>
-                    </div>
-                  )
-                })}
-              </div>
+          <div className="mt-4 rounded-2xl p-4" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>
+            <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
+              Keyboard Shortcuts (C4–C5)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(PC_KEY_MAP).map(([key, midi]) => {
+                const noteName = MIDI_NAMES[midi] ?? `M${midi}`
+                return (
+                  <div key={key} className="flex flex-col items-center gap-1">
+                    <kbd
+                      className="w-8 h-8 grid place-items-center rounded-lg text-xs font-mono font-bold uppercase"
+                      style={{ background: 'var(--paper)', border: '1px solid var(--line)', color: 'var(--ink)' }}
+                    >
+                      {key}
+                    </kbd>
+                    <span className="text-[10px]" style={{ color: 'var(--muted)' }}>{noteName}</span>
+                  </div>
+                )
+              })}
             </div>
-
-            <div className="mt-6 rounded-2xl p-5" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>
-              <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>How to play</p>
-              <ol className="space-y-2 text-sm" style={{ color: 'var(--ink-2)' }}>
-                <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>1.</span> A random note appears on the staff above.</li>
-                <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>2.</span> Identify the note name and play it on the keyboard.</li>
-                <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>3.</span> <span style={{ color: '#22c55e' }}>Green</span> = correct, next note loads automatically. <span style={{ color: '#ef4444' }}>Red</span> = wrong, try again.</li>
-                <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>4.</span> Connect a MIDI piano to use a real instrument — web audio mutes automatically.</li>
-              </ol>
-            </div>
-          </>
+          </div>
         )}
+
+        {/* ── How to play (always shown) ────────────────────────────── */}
+        <div className="mt-4 rounded-2xl p-4" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>
+          <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>How to play</p>
+          <ol className="space-y-1 text-sm" style={{ color: 'var(--ink-2)' }}>
+            <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>1.</span> A random note appears on the staff above.</li>
+            <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>2.</span> Identify the note name and play it on the keyboard.</li>
+            <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>3.</span> <span style={{ color: '#22c55e' }}>Green</span> = correct, next note loads automatically. <span style={{ color: '#ef4444' }}>Red</span> = wrong, try again.</li>
+            <li><span className="font-semibold" style={{ color: 'var(--ink)' }}>4.</span> Connect a MIDI piano to use a real instrument — web audio mutes automatically.</li>
+          </ol>
+        </div>
 
       </div>
       </div>
