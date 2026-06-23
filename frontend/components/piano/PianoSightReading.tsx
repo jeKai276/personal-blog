@@ -701,6 +701,13 @@ export default function PianoSightReading() {
     if (navigator.requestMIDIAccess) {
       try {
         const access = await navigator.requestMIDIAccess({ sysex: false })
+        
+        if (access.inputs.size === 0) {
+          alert("No MIDI devices detected. Please ensure your piano is connected via USB and turned on.")
+          setMidiStatus('disconnected')
+          return
+        }
+
         midiAccessRef.current = access
         setMidiStatus('connected')
 
@@ -725,8 +732,14 @@ export default function PianoSightReading() {
           attachListeners(access)
         }
         return
-      } catch {
-        // Fallthrough to BLE MIDI if standard Web MIDI is blocked or fails
+      } catch (err: any) {
+        console.error('Web MIDI Error:', err)
+        if (err.name === 'SecurityError') {
+          alert('MIDI access was denied. Please check your browser site permissions.')
+          setMidiStatus('disconnected')
+          return
+        }
+        // Fallthrough to BLE MIDI if other error
       }
     }
 
@@ -787,9 +800,15 @@ export default function PianoSightReading() {
           setMidiStatus('disconnected')
         })
         return
-      } catch (err) {
+      } catch (err: any) {
         console.error('BLE MIDI Error', err)
+        if (err.name === 'NotFoundError') {
+          // User cancelled the prompt, not a real error
+          setMidiStatus('disconnected')
+          return
+        }
         setMidiStatus('error')
+        alert(`Bluetooth MIDI Error: ${err.message || err}`)
         return
       }
     }
