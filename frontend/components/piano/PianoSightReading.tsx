@@ -475,6 +475,9 @@ export default function PianoSightReading() {
 
     if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current)
 
+    // Debug log per user request
+    console.log('Expected MIDI:', currentNote.midi, '| Received MIDI:', midi)
+
     if (midi === currentNote.midi) {
       // Correct!
       setFeedback('correct')
@@ -499,6 +502,12 @@ export default function PianoSightReading() {
       }, 400)
     }
   }, [currentNote, pickNote, playSound])
+
+  // Prevent stale closures in MIDI event listeners without constant re-attaching
+  const handleNoteInputRef = useRef(handleNoteInput)
+  useEffect(() => {
+    handleNoteInputRef.current = handleNoteInput
+  }, [handleNoteInput])
 
   // ── Draw staff via requestAnimationFrame ───────────────────────────────
   useEffect(() => {
@@ -545,7 +554,7 @@ export default function PianoSightReading() {
               const [status, note, velocity] = Array.from(e.data)
               const cmd = status & 0xf0
               if ((cmd === 0x90 && velocity > 0) && note !== undefined) {
-                handleNoteInput(note)
+                handleNoteInputRef.current(note)
               }
             }
           })
@@ -606,7 +615,7 @@ export default function PianoSightReading() {
                 const note = data[i]
                 const vel = data[i + 1] !== undefined ? data[i + 1] : 0
                 if (cmd === 0x90 && vel > 0) {
-                  handleNoteInput(note)
+                  handleNoteInputRef.current(note)
                 }
                 i += 2
               } else {
@@ -629,22 +638,7 @@ export default function PianoSightReading() {
 
     // 3. Neither supported
     setMidiStatus('unsupported')
-  }, [handleNoteInput])
-
-  // Re-attach MIDI listeners when handleNoteInput changes
-  useEffect(() => {
-    if (!midiAccessRef.current) return
-    midiAccessRef.current.inputs.forEach(input => {
-      input.onmidimessage = (e: MIDIMessageEvent) => {
-        if (!e.data) return
-        const [status, note, velocity] = Array.from(e.data)
-        const cmd = status & 0xf0
-        if ((cmd === 0x90 && velocity > 0) && note !== undefined) {
-          handleNoteInput(note)
-        }
-      }
-    })
-  }, [handleNoteInput])
+  }, [])
 
   // ── PC Keyboard ───────────────────────────────────────────────────────
   useEffect(() => {
