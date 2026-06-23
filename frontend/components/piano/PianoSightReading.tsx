@@ -21,7 +21,14 @@ interface NoteInfo {
 // Natural notes only for now (no accidentals in beginner mode)
 
 const TREBLE_NOTES: NoteInfo[] = [
-  // Range: C4 (middle C) to C6
+  // Range: C3 to B6
+  { midi: 48, name: 'C3', pitchClass: 'C', octave: 3, staffPosition: -13, accidental: '' },
+  { midi: 50, name: 'D3', pitchClass: 'D', octave: 3, staffPosition: -12, accidental: '' },
+  { midi: 52, name: 'E3', pitchClass: 'E', octave: 3, staffPosition: -11, accidental: '' },
+  { midi: 53, name: 'F3', pitchClass: 'F', octave: 3, staffPosition: -10, accidental: '' },
+  { midi: 55, name: 'G3', pitchClass: 'G', octave: 3, staffPosition: -9, accidental: '' },
+  { midi: 57, name: 'A3', pitchClass: 'A', octave: 3, staffPosition: -8, accidental: '' },
+  { midi: 59, name: 'B3', pitchClass: 'B', octave: 3, staffPosition: -7, accidental: '' },
   { midi: 60, name: 'C4', pitchClass: 'C', octave: 4, staffPosition: -6, accidental: '' },
   { midi: 62, name: 'D4', pitchClass: 'D', octave: 4, staffPosition: -5, accidental: '' },
   { midi: 64, name: 'E4', pitchClass: 'E', octave: 4, staffPosition: -4, accidental: '' },
@@ -37,13 +44,21 @@ const TREBLE_NOTES: NoteInfo[] = [
   { midi: 81, name: 'A5', pitchClass: 'A', octave: 5, staffPosition:  6, accidental: '' },
   { midi: 83, name: 'B5', pitchClass: 'B', octave: 5, staffPosition:  7, accidental: '' },
   { midi: 84, name: 'C6', pitchClass: 'C', octave: 6, staffPosition:  8, accidental: '' },
+  { midi: 86, name: 'D6', pitchClass: 'D', octave: 6, staffPosition:  9, accidental: '' },
+  { midi: 88, name: 'E6', pitchClass: 'E', octave: 6, staffPosition: 10, accidental: '' },
+  { midi: 89, name: 'F6', pitchClass: 'F', octave: 6, staffPosition: 11, accidental: '' },
+  { midi: 91, name: 'G6', pitchClass: 'G', octave: 6, staffPosition: 12, accidental: '' },
+  { midi: 93, name: 'A6', pitchClass: 'A', octave: 6, staffPosition: 13, accidental: '' },
+  { midi: 95, name: 'B6', pitchClass: 'B', octave: 6, staffPosition: 14, accidental: '' },
 ]
 
 const BASS_NOTES: NoteInfo[] = [
-  // Range: E2 to G4, middle line = D3 (MIDI 50)
+  // Range: C2 to B4, middle line = D3 (MIDI 50)
   // Position 0 = middle line (D3)
+  { midi: 36, name: 'C2', pitchClass: 'C', octave: 2, staffPosition: -8, accidental: '' },
+  { midi: 38, name: 'D2', pitchClass: 'D', octave: 2, staffPosition: -7, accidental: '' },
   { midi: 40, name: 'E2', pitchClass: 'E', octave: 2, staffPosition: -6, accidental: '' },
-  { midi: 41, name: 'F2', pitchClass: 'F', octave: 2, staffPosition: -5, accidental: '' }, // F2=41
+  { midi: 41, name: 'F2', pitchClass: 'F', octave: 2, staffPosition: -5, accidental: '' },
   { midi: 43, name: 'G2', pitchClass: 'G', octave: 2, staffPosition: -4, accidental: '' },
   { midi: 45, name: 'A2', pitchClass: 'A', octave: 2, staffPosition: -3, accidental: '' },
   { midi: 47, name: 'B2', pitchClass: 'B', octave: 2, staffPosition: -2, accidental: '' },
@@ -57,7 +72,15 @@ const BASS_NOTES: NoteInfo[] = [
   { midi: 60, name: 'C4', pitchClass: 'C', octave: 4, staffPosition:  6, accidental: '' },
   { midi: 62, name: 'D4', pitchClass: 'D', octave: 4, staffPosition:  7, accidental: '' },
   { midi: 64, name: 'E4', pitchClass: 'E', octave: 4, staffPosition:  8, accidental: '' },
+  { midi: 65, name: 'F4', pitchClass: 'F', octave: 4, staffPosition:  9, accidental: '' },
+  { midi: 67, name: 'G4', pitchClass: 'G', octave: 4, staffPosition: 10, accidental: '' },
+  { midi: 69, name: 'A4', pitchClass: 'A', octave: 4, staffPosition: 11, accidental: '' },
+  { midi: 71, name: 'B4', pitchClass: 'B', octave: 4, staffPosition: 12, accidental: '' },
 ]
+
+// All available white notes for the dropdown options
+const ALL_WHITE_NOTES = Array.from(new Set([...BASS_NOTES, ...TREBLE_NOTES]))
+  .sort((a, b) => a.midi - b.midi)
 
 // ─── Canvas Staff Drawing ─────────────────────────────────────────────────
 
@@ -404,6 +427,8 @@ export default function PianoSightReading() {
   const rafRef        = useRef<number>(0)
 
   const [clef, setClef]               = useState<Clef>('treble')
+  const [minNote, setMinNote]         = useState<number>(48) // Default C3
+  const [maxNote, setMaxNote]         = useState<number>(83) // Default B5
   const [currentNote, setCurrentNote] = useState<NoteInfo | null>(null)
   const [feedback, setFeedback]       = useState<'correct' | 'wrong' | 'idle'>('idle')
   const [midiStatus, setMidiStatus]   = useState<'disconnected' | 'connected' | 'error' | 'unsupported'>('disconnected')
@@ -439,12 +464,20 @@ export default function PianoSightReading() {
       resolvedClef = activeClef
       pool = activeClef === 'treble' ? TREBLE_NOTES : BASS_NOTES
     }
-    const note = pool[Math.floor(Math.random() * pool.length)]
+
+    // Filter by minNote and maxNote limits
+    let filteredPool = pool.filter(n => n.midi >= minNote && n.midi <= maxNote)
+    if (filteredPool.length === 0) {
+      // Fallback if range is too narrow for the selected clef
+      filteredPool = pool
+    }
+
+    const note = filteredPool[Math.floor(Math.random() * filteredPool.length)]
     setCurrentNote(note)
     setNoteClef(resolvedClef)
     setFeedback('idle')
     setShowHint(false)
-  }, [clef])
+  }, [clef, minNote, maxNote])
 
   // Init game
   useEffect(() => {
@@ -663,9 +696,9 @@ export default function PianoSightReading() {
   }
 
   // ── Derived keyboard range ─────────────────────────────────────────────
-  // 'both' mode spans E2–C6 so show octaves 2–5
-  const kbStart = clef === 'treble' ? 3 : 2
-  const kbEnd   = clef === 'treble' ? 5 : clef === 'bass' ? 4 : 5
+  // Virtual keyboard now spans exactly C2 to B6 (5 octaves)
+  const kbStart = 2
+  const kbEnd   = 6
 
   // Canvas height: increased by ~35-40% to fit extreme ledger lines
   const canvasHeight = clef === 'both' ? 550 : 300
@@ -701,23 +734,60 @@ export default function PianoSightReading() {
         {/* ── Controls row ────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           {/* Clef toggle */}
-          <div
-            className="flex items-center gap-1 rounded-full p-1"
-            style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}
-          >
-            {(['treble', 'bass', 'both'] as Clef[]).map(c => (
-              <button
-                key={c}
-                onClick={() => switchClef(c)}
-                className="px-4 py-1.5 text-sm rounded-full font-medium transition-all"
-                style={{
-                  background: clef === c ? 'var(--ink)' : 'transparent',
-                  color: clef === c ? 'var(--paper)' : 'var(--muted)',
+          <div className="flex flex-wrap items-center gap-3">
+            <div
+              className="flex items-center gap-1 rounded-full p-1"
+              style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}
+            >
+              {(['treble', 'bass', 'both'] as Clef[]).map(c => (
+                <button
+                  key={c}
+                  onClick={() => switchClef(c)}
+                  className="px-4 py-1.5 text-sm rounded-full font-medium transition-all"
+                  style={{
+                    background: clef === c ? 'var(--ink)' : 'transparent',
+                    color: clef === c ? 'var(--paper)' : 'var(--muted)',
+                  }}
+                >
+                  {c === 'treble' ? '𝄞 Treble' : c === 'bass' ? '𝄢 Bass' : '𝄞𝄢 Both'}
+                </button>
+              ))}
+            </div>
+
+            {/* Range Configuration */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm" style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}>
+              <span className="font-medium text-[11px] uppercase tracking-wider" style={{ color: 'var(--muted)' }}>Range:</span>
+              
+              <select
+                value={minNote}
+                onChange={(e) => {
+                  const val = Number(e.target.value)
+                  if (val <= maxNote) setMinNote(val)
                 }}
+                className="bg-transparent outline-none font-medium appearance-none cursor-pointer"
+                style={{ color: 'var(--ink)' }}
               >
-                {c === 'treble' ? '𝄞 Treble' : c === 'bass' ? '𝄢 Bass' : '𝄞𝄢 Both'}
-              </button>
-            ))}
+                {ALL_WHITE_NOTES.map(n => (
+                  <option key={n.midi} value={n.midi} style={{ color: '#000' }}>{n.name}</option>
+                ))}
+              </select>
+              
+              <span style={{ color: 'var(--muted)' }}>—</span>
+              
+              <select
+                value={maxNote}
+                onChange={(e) => {
+                  const val = Number(e.target.value)
+                  if (val >= minNote) setMaxNote(val)
+                }}
+                className="bg-transparent outline-none font-medium appearance-none cursor-pointer"
+                style={{ color: 'var(--ink)' }}
+              >
+                {ALL_WHITE_NOTES.map(n => (
+                  <option key={n.midi} value={n.midi} style={{ color: '#000' }}>{n.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* MIDI connect */}
@@ -862,7 +932,7 @@ export default function PianoSightReading() {
 
         {/* ── Virtual Keyboard ─────────────────────────────────────────── */}
         <div
-          className="rounded-2xl p-4"
+          className="rounded-2xl p-4 overflow-x-auto whitespace-nowrap"
           style={{ background: 'var(--paper-2)', border: '1px solid var(--line)' }}
         >
           <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
