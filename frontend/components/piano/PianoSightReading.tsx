@@ -521,6 +521,7 @@ const PC_KEY_MAP: Record<string, number> = {
 
 // Pitch classes to semitone mapping
 const PC_SEMITONES: Record<string, number> = { 'C':0, 'D':2, 'E':4, 'F':5, 'G':7, 'A':9, 'B':11 }
+const PC_SOLFEGE: Record<string, string> = { 'C':'Do', 'D':'Re', 'E':'Mi', 'F':'Fa', 'G':'Sol', 'A':'La', 'B':'Si' }
 
 // Full chromatic name lookup for display
 const MIDI_NAMES: Record<number, string> = {
@@ -1183,9 +1184,10 @@ export default function PianoSightReading() {
               />
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: isMobile ? 6 : 12, justifyContent: 'center', width: '100%', padding: '12px 0 20px 0' }}>
+            <div style={{ display: 'flex', gap: isMobile ? 6 : 14, justifyContent: 'center', width: '100%', padding: isMobile ? '12px 0 16px' : '16px 0 24px' }}>
               {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(pc => {
                 const semitone = PC_SEMITONES[pc]
+                const solfege = PC_SOLFEGE[pc]
                 const targetMidi = currentNote ? (currentNote.octave + 1) * 12 + semitone : 60 + semitone
                 
                 const isActive = activeFlash && (activeFlash.midi % 12 === semitone)
@@ -1193,16 +1195,16 @@ export default function PianoSightReading() {
                 
                 let bg = 'var(--paper)'
                 let color = 'var(--ink)'
-                let borderColor = 'var(--line)'
+                let border = '1px solid var(--line)'
                 
                 if (isActive) {
                   bg = activeFlash.color
                   color = '#fff'
-                  borderColor = activeFlash.color
+                  border = `1px solid ${activeFlash.color}`
                 } else if (isHint) {
-                  bg = '#3b82f6'
+                  bg = 'oklch(0.55 0.16 280)' // blue
                   color = '#fff'
-                  borderColor = '#3b82f6'
+                  border = '1px solid oklch(0.55 0.16 280)'
                 }
 
                 return (
@@ -1211,21 +1213,27 @@ export default function PianoSightReading() {
                     onClick={() => handleNoteInput(targetMidi)}
                     style={{
                       flex: 1,
-                      maxWidth: isMobile ? 45 : 72,
-                      height: isMobile ? 70 : 100,
-                      borderRadius: 12,
-                      border: `2px solid ${borderColor}`,
-                      fontSize: isMobile ? 24 : 32,
-                      fontWeight: 700,
+                      maxWidth: isMobile ? 52 : 88,
+                      height: isMobile ? 74 : 110,
+                      borderRadius: isMobile ? 16 : 24,
+                      border,
                       background: bg,
                       color: color,
                       cursor: 'pointer',
-                      transition: 'all 0.1s',
-                      boxShadow: isActive ? `0 0px 0 ${borderColor}` : `0 4px 0 ${borderColor}`,
-                      transform: isActive ? 'translateY(4px)' : 'none',
+                      transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)', // Spring-like bounce
+                      boxShadow: isActive 
+                        ? `0 2px 8px ${activeFlash.color}66` // Glow
+                        : isDark ? '0 4px 12px rgba(0,0,0,0.2)' : '0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+                      transform: isActive ? 'scale(0.92)' : (isHint ? 'translateY(-4px)' : 'none'),
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 2,
                     }}
                   >
-                    {pc}
+                    <span style={{ fontSize: isMobile ? 26 : 38, fontWeight: 700, lineHeight: 1 }}>{pc}</span>
+                    <span style={{ fontSize: isMobile ? 11 : 14, fontWeight: 500, opacity: 0.6, letterSpacing: '0.05em' }}>{solfege}</span>
                   </button>
                 )
               })}
