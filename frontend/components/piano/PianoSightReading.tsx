@@ -318,7 +318,8 @@ const WHITE_SEMITONES = [0, 2, 4, 5, 7, 9, 11]
 interface KeyboardProps {
   startOctave: number
   endOctave: number
-  highlightMidi: number | null
+  highlightMidi: number | null   // Blue hint highlight (only when showHint)
+  scrollHintMidi: number | null  // Triggers scrollIntoView (only when showHint)
   activeFlash: { midi: number; color: string } | null
   onNotePlay: (midi: number) => void
   midiConnected: boolean
@@ -341,26 +342,28 @@ const BLACK_KEYS_DEF = [
   { semitone: 10, leftFrac: 5.6 },  // A#
 ]
 
-function VirtualKeyboard({ startOctave, endOctave, highlightMidi, activeFlash, onNotePlay, midiConnected }: KeyboardProps) {
+function VirtualKeyboard({ startOctave, endOctave, highlightMidi, scrollHintMidi, activeFlash, onNotePlay, midiConnected }: KeyboardProps) {
   const octaves  = endOctave - startOctave + 1
   const totalPxW = octaves * 7 * WHITE_W
 
   // Ref map for auto-scroll: midi -> element
   const keyElRefs = useRef<Map<number, HTMLElement>>(new Map())
 
-  // Auto-scroll when highlightMidi changes
-  useEffect(() => {
-    if (highlightMidi === null) return
-    const el = keyElRefs.current.get(highlightMidi)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-  }, [highlightMidi])
-
-  // Also auto-scroll on activeFlash (correct/wrong feedback)
+  // Auto-scroll ONLY on activeFlash — this is triggered by the user pressing a key.
+  // (Hint-triggered scroll is handled by the parent via the scrollHintRef callback.)
   useEffect(() => {
     if (!activeFlash) return
     const el = keyElRefs.current.get(activeFlash.midi)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
   }, [activeFlash])
+
+  // Expose a way for the parent to programmatically scroll to any midi key
+  // (used by Hint button only — never triggered automatically on new note)
+  useEffect(() => {
+    if (scrollHintMidi == null) return
+    const el = keyElRefs.current.get(scrollHintMidi)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [scrollHintMidi])
 
   return (
     <div
@@ -1025,7 +1028,8 @@ export default function PianoSightReading() {
           <VirtualKeyboard
             startOctave={kbStart}
             endOctave={kbEnd}
-            highlightMidi={currentNote?.midi ?? null}
+            highlightMidi={showHint ? (currentNote?.midi ?? null) : null}
+            scrollHintMidi={showHint ? (currentNote?.midi ?? null) : null}
             activeFlash={activeFlash}
             onNotePlay={handleNoteInput}
             midiConnected={midiConnected}
