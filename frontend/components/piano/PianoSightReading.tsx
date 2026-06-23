@@ -843,11 +843,11 @@ export default function PianoSightReading() {
         overflow: 'hidden',
       }}
     >
-      {/* Scrollable content area — grows to fill, scrolls only if needed on large screens */}
+      {/* Scrollable content area — grows to fill, scrolls only if needed */}
       <div
         style={{
           flex: 1,
-          overflowY: isMobile ? 'hidden' : 'auto',
+          overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
         }}
