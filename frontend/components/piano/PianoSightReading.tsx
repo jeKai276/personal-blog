@@ -371,13 +371,9 @@ function VirtualKeyboard({ startOctave, endOctave, highlightMidi, scrollHintMidi
   // Ref map for auto-scroll: midi -> element
   const keyElRefs = useRef<Map<number, HTMLElement>>(new Map())
 
-  // Auto-scroll ONLY on activeFlash — this is triggered by the user pressing a key.
-  // (Hint-triggered scroll is handled by the parent via the scrollHintRef callback.)
-  useEffect(() => {
-    if (!activeFlash) return
-    const el = keyElRefs.current.get(activeFlash.midi)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-  }, [activeFlash])
+  // Note: we intentionally do NOT auto-scroll on activeFlash (user pressing a key).
+  // Doing so would scroll the keyboard away from the selected range whenever
+  // the user taps a key near the edge of the visible area.
 
   // Expose a way for the parent to programmatically scroll to any midi key
   // (used by Hint button only — never triggered automatically on new note)
